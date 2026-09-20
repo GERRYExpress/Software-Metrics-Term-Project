@@ -1,7 +1,7 @@
-DROP DATABASE IF EXISTS kd5f;
+DROP DATABASE IF EXISTS mymariadb;
 
-CREATE DATABASE IF NOT EXISTS kd5f;
-USE kd5f;
+CREATE DATABASE IF NOT EXISTS mymariadb;
+USE mymariadb;
 
 CREATE TABLE products (
 	product_id INT NOT NULL UNIQUE AUTO_INCREMENT,
@@ -15,7 +15,7 @@ CREATE TABLE products (
 CREATE TABLE categories (
 	category_id INT NOT NULL UNIQUE AUTO_INCREMENT,
     name VARCHAR(50) NOT NULL UNIQUE,
-    isHidden BOOLEAN NOT NULL DEFAULT 0,
+    is_hidden BOOLEAN NOT NULL DEFAULT 0,
     PRIMARY KEY (category_id)
 ) ENGINE=InnoDB;
 
@@ -24,10 +24,10 @@ CREATE TABLE accounts (
     username VARCHAR(50) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
     created_date DATE NOT NULL,
-    isBuyer BOOLEAN DEFAULT FALSE,
+    is_buyer BOOLEAN DEFAULT FALSE,
     total_spend DECIMAL(10,2) DEFAULT 0,
     total_game INT DEFAULT 0,
-    isSeller BOOLEAN DEFAULT FALSE,
+    is_seller BOOLEAN DEFAULT FALSE,
     total_sale DECIMAL(10,2) DEFAULT 0,
     PRIMARY KEY (user_id)
 ) ENGINE=InnoDB;

@@ -1,4 +1,4 @@
-INSERT INTO accounts (username, password, created_date, isSeller) VALUES ('gerry', '123', now(), true);
+INSERT INTO accounts (username, password, created_date, is_seller) VALUES ('gerry', '123', now(), true);
 
 
 INSERT INTO categories (name) VALUES ('Dark Fantasy'), ('Atmospheric'), ('RPG'), ('Adventure'),
