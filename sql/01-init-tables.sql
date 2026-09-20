@@ -25,9 +25,9 @@ CREATE TABLE accounts (
     password VARCHAR(255) NOT NULL,
     created_date DATE NOT NULL,
     is_buyer BOOLEAN DEFAULT FALSE,
-    total_spend DECIMAL(10,2) DEFAULT 0,
-    total_game INT DEFAULT 0,
     is_seller BOOLEAN DEFAULT FALSE,
+    total_game INT DEFAULT 0,
+    total_spend DECIMAL(10,2) DEFAULT 0,
     total_sale DECIMAL(10,2) DEFAULT 0,
     PRIMARY KEY (user_id)
 ) ENGINE=InnoDB;
