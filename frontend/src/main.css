@@ -1,0 +1,20 @@
+@import "tailwindcss";
+
+@theme {
+    --color-primary: #8122C9;
+    --color-secondary: #8B00F5;
+    --color-action: #B7EF00;
+    --color-tertiary: #2F2B33; 
+    --color-white: #FEFEFE;
+}
+
+:root {
+    @apply bg-primary text-white;
+}
+
+h1 { @apply text-4xl font-bold }
+
+a { 
+    @apply transition-all text-action hover:text-lime-400 
+    active:text-lime-600 hover:scale-105 underline
+}
