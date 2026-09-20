@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import AppCard from '@/components/AppCard.vue';
+import AuthMainContainer from '@/components/AuthMainContainer.vue';
 import BaseButton from '@/components/BaseButton.vue';
 import BaseInput from '@/components/BaseInput.vue';
 import BaseToggle from '@/components/BaseToggle.vue';
@@ -23,6 +24,8 @@ const toggleRole = () => {
 }
 
 const handleLogin = () => {
+    /* Login query */
+    
     router.push({
         name: 'landing-page-view'
     })
@@ -32,7 +35,7 @@ const handleLogin = () => {
 
 
 <template>
-    <main class="flex flex-col items-center justify-center my-16 gap-y-5">
+    <AuthMainContainer>
         <h1>Welcome Back!</h1>
         <AppCard class="w-100">
             <RouterLink class=" place-self-start" :to="{ path: '' }">
@@ -52,5 +55,5 @@ const handleLogin = () => {
                 <BaseButton text="Login">Sign In</BaseButton>
             </form>
         </AppCard>
-    </main>
+    </AuthMainContainer>
 </template>
