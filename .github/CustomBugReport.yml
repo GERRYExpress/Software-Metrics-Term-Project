@@ -1,0 +1,59 @@
+name: Bug Report
+description: Report an encountered bug here!
+title: "[BUG]: "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to Reproduce
+      description: Tell the steps of how the bug is found.
+      placeholder: |
+        1. Go to ....
+        2. Click ....
+        3. Refresh ....
+  - type: input
+    id: expected-behavior
+    attributes:
+      label: Expected Behavior
+      description: Ideal output.
+    validations:
+      required: true
+  - type: input
+    id: actual-behavior
+    attributes:
+      label: Actual Behavior
+      description: Actual output.
+    validations:
+      required: true
+  - type: upload
+    id:  screnshots
+    attributes:
+      label: Screenshots / Logs
+      description: Add visual evidence, terminal output, or logs here.
+  - type: dropdown
+    id: os
+    attributes:
+      label: What operating system are you seeing the problem on?
+      options:
+        - Windows
+        - MacOS
+        - Linux
+    validations:
+      required: true
+  - type: dropdown
+    id: browser
+    attributes:
+      label: What operating system are you seeing the problem on?
+      options:
+        - Chrome
+        - Opera
+        - Samsung Browser
+        - Microsoft Edge
+        - Safari
+        - Brave
+        - FireFox
+        - Other
+    validations:
+      required: true
+  

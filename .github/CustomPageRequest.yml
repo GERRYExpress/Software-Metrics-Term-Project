@@ -1,0 +1,41 @@
+name: Page Request
+description: Request a new webpage here!
+title: "[WEBPAGE]: "
+labels: ["enhancement"]
+body:
+  - type: input
+    id: name
+    attributes:
+      label: Webpage Name / Route
+      description: What should the page called.
+      placeholder: e.g. /home, landing page
+    validations:
+      required: true
+  - type: input
+    id: purpose
+    attributes:
+      label: Purpose and Functionality
+      description: What can the page do?
+      placeholder: e.g. The page should display..
+    validations:
+      required: true
+  - type: textarea
+    id: data
+    attributes:
+      label: Components / Views
+      description: What component should be displayed on the page?
+      placeholder: |
+        - Button
+        - Navbar
+        - Sidebar
+        - Card
+        - Badge
+    validations:
+      required: true
+  - type: upload
+    id: designed-page
+    attributes:
+      label: Design References
+      description: Upload the designed UI image from Figma
+    validations:
+      required: true
