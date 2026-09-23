@@ -1,3 +1,4 @@
+import BuyerLayoutView from '@/views/BuyerLayoutView.vue'
 import LandingView from '@/views/LandingView.vue'
 import LoginFormView from '@/views/LoginFormView.vue'
 import RegisterFormView from '@/views/RegisterFormView.vue'
@@ -7,7 +8,7 @@ const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
-      path: '/login',
+      path: '/login ',
       name: 'login-view',
       component: LoginFormView,
     },
@@ -18,8 +19,15 @@ const router = createRouter({
     },
     {
       path: '',
-      name: 'landing-page-view',
-      component: LandingView
+      name: 'buyer-layout-view',
+      component: BuyerLayoutView,
+      children: [
+        {
+          path: '',
+          name: 'landing-page-view',
+          component: LandingView
+        }
+      ]
     }
   ],
 })

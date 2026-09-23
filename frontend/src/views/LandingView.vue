@@ -1,3 +1,16 @@
+<script setup lang="ts">
+import BaseButton from '@/components/BaseButton.vue';
+import GameCard from '@/components/GameCard.vue';
+
+</script>
+
 <template>
-    <div></div>
+    <main class="flex flex-col items-center mx-16 my-5 gap-y-3">
+        <h1 class="w-full">HIGHLIGHT</h1>
+        <div class="bg-tertiary w-full h-64 rounded-xl"></div>
+        <div class="grid grid-cols-5 gap-5 w-auto">
+            <GameCard v-for="value in 10" :key="value"/>
+        </div>
+        <BaseButton class=" place-self-center w-1/3!">EXPLORE MORE</BaseButton>
+    </main>
 </template>

@@ -52,7 +52,7 @@ const handleLogin = () => {
                     <p class="font-bold">Login as</p>
                     <BaseToggle @toggleRole="toggleRole" v-model="credential.isSeller" :options="loginOptions"/>
                 </div>
-                <BaseButton text="Login">Sign In</BaseButton>
+                <BaseButton>Login</BaseButton>
             </form>
         </AppCard>
     </AuthMainContainer>
