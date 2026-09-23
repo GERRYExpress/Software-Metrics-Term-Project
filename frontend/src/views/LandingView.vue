@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import BaseButton from '@/components/BaseButton.vue';
 import GameCard from '@/components/GameCard.vue';
 
 </script>
@@ -11,6 +10,6 @@ import GameCard from '@/components/GameCard.vue';
         <div class="grid grid-cols-5 gap-5 w-auto">
             <GameCard v-for="value in 10" :key="value"/>
         </div>
-        <BaseButton class=" place-self-center w-1/3!">EXPLORE MORE</BaseButton>
+        <RouterLink :to="{ name: 'search-result-view' }" class="place-self-center">EXPLORE MORE</RouterLink>
     </main>
 </template>
