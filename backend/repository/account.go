@@ -3,6 +3,8 @@ package repository
 import (
 	"software-metrics-project/config"
 	"software-metrics-project/model"
+
+	"github.com/Masterminds/squirrel"
 )
 
 type AccountRepository struct {
@@ -10,8 +12,15 @@ type AccountRepository struct {
 }
 
 func (r *AccountRepository) GetAccounts() ([]model.Account, error) {
-	query := "SELECT * FROM accounts"
-	rows, err := config.DB.Query(query)
+	query, args, err := squirrel.
+		Select("*").
+		From("accounts").
+		ToSql()
+	if err != nil {
+		return nil, err
+	}
+
+	rows, err := config.DB.Query(query, args...)
 	if err != nil {
 		return nil, err
 	}
