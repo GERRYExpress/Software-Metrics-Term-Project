@@ -6,6 +6,7 @@ import (
 	"software-metrics-project/repository"
 	"software-metrics-project/service"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
 
@@ -18,6 +19,13 @@ type Endpoint interface {
 func main() {
 	config.ConnectDB()
 	r := gin.Default()
+	r.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"http://localhost:5173"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
+		ExposeHeaders:    []string{"Content-Length", "X-Total-Count"},
+		AllowCredentials: false,
+	}))
 	api := r.Group("/api")
 	{
 		// /api/v1
