@@ -1,13 +1,22 @@
 <script setup lang="ts">
-import BaseSelect from '@/components/BaseSelect.vue';
+import GameCard from '@/components/GameCard.vue';
+import ProductMainContainer from '@/components/ProductMainContainer.vue';
+defineProps<{
+    page: number
+}>()
 
 </script>
 
 
 <template>
-    <main>
-        <div>
-            <BaseSelect/>
+    <ProductMainContainer class="flex flex-col">
+        <h1 class="w-full">Search Results</h1>
+        <div class="grid grid-cols-5 gap-5 w-auto">
+            <GameCard v-for="value in 10" :key="value"/>
         </div>
-    </main>
+        <div class="bg-black">
+            <RouterLink v-if="page >= 1" :to="{ query: { page: page - 1 }}"/>
+            <RouterLink :to="{ query: { page: page + 1 }}"/>
+        </div>
+    </ProductMainContainer>
 </template>
