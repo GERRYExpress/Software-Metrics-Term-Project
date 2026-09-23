@@ -31,7 +31,8 @@ const router = createRouter({
         {
           path: '/search',
           name: 'search-result-view',
-          component: SearchResultView
+          component: SearchResultView,
+          props: true
         }
       ]
     }
