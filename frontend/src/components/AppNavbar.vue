@@ -26,11 +26,11 @@ onMounted(() => {
 </script>
 
 <template>
-    <nav class="w-full items-center justify-center flex flex-row gap-x-2.5 my-5">
+    <nav class="w-5xl mx-auto items-center justify-center flex flex-row gap-x-2.5 my-5">
         <div class="relative flex flex-col items-start justify-center w-1/2">
             <Search class="absolute left-1.5"/>
             <BaseInput class="px-8"/>
-            <BaseSelect class="absolute top-0 right-0 rounded-r-lg" v-if="categories" :options="categories"/>
+            <BaseSelect class="absolute top-0 right-0 rounded-r-lg text-xs" v-if="categories" :options="categories"/>
         </div>
         <AppNavItem v-for="navItem in navItems" :name="navItem.name" :routeName="navItem.routeName" :key="navItem.name"/>
     </nav>

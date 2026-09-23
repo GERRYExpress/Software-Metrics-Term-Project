@@ -9,7 +9,7 @@ import { Copyright, InfoIcon } from '@lucide/vue';
         <div class="flex gap-x-1.5">
             <Copyright/><p>2027 KaiDao-5-Fong</p>
         </div>
-        <RouterLink class="flex gap-x-1.5" :to="{ name: '' }">
+        <RouterLink class="flex gap-x-1.5" :to="{ name: 'contact-view' }">
             <InfoIcon/>CONTACT US
         </RouterLink>
     </footer>
