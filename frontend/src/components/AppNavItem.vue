@@ -12,7 +12,7 @@ withDefaults(defineProps<NavItemProps>(), {
 
 
 <template>
-    <RouterLink :to="{ name: 'landing-page-view' }" class="flex items-center justify-center bg-secondary text-white! rounded-full size-12 shadow-md">
+    <RouterLink :to="{ name: routeName }" class="flex items-center justify-center bg-secondary text-white! rounded-full size-12 shadow-md">
         <ShoppingCart v-if="name === 'cart'"/>
         <Heart v-else-if="name === 'wishlist'"/>
         <UserRound v-else-if="name === 'profile'"/>
