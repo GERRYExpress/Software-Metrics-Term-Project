@@ -39,9 +39,9 @@ const handleRegister = () => {
                 <BaseInput label="Username" v-model="credential.password"/>
                 <BaseInput label="Username" v-model="credential.confirmPassword"/>
                 <span class="w-full text-center">
-                    Already have an account? <RouterLink :to="{name: 'login-view'}">Sign in here</RouterLink>
+                    Already have an account? <RouterLink :to="{ name: 'login-view' }">Sign in here</RouterLink>
                 </span>
-                <BaseButton text="Register" />
+                <BaseButton>Register</BaseButton>
             </form>
         </AppCard>
     </AuthMainContainer>
