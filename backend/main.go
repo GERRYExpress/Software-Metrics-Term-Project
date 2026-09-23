@@ -9,12 +9,50 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type Endpoint interface {
+	CreateGameEndpoint(r *gin.RouterGroup)
+	CreateAccountEndpoint(r *gin.RouterGroup)
+	CreateCategoryEndpoint(r *gin.RouterGroup)
+}
+
 func main() {
 	config.ConnectDB()
 	r := gin.Default()
+	api := r.Group("/api")
+	{
+		// /api/v1
+		v1 := api.Group("/v1")
+		{
+			accounts := v1.Group("/accounts")
+			CreateAccountEndpoint(accounts)
+
+			games := v1.Group("/games")
+			CreateGameEndpoint(games)
+
+			categories := v1.Group("/categories")
+			CreateCategoryEndpoint(categories)
+		}
+	}
+	r.Run(":8080")
+}
+
+func CreateAccountEndpoint(r *gin.RouterGroup) {
 	repo := &repository.AccountRepository{}
 	service := &service.AccountService{Repo: repo}
 	handler := &handler.AccountHandler{Service: service}
-	r.GET("/accounts", handler.GetAccounts)
-	r.Run(":8080")
+	r.GET("", handler.GetAccounts)
+}
+
+func CreateGameEndpoint(r *gin.RouterGroup) {
+	repo := &repository.GameRepository{}
+	service := &service.GameService{Repo: repo}
+	handler := &handler.GameHandler{Service: service}
+	r.GET("", handler.GetGames)
+}
+
+func CreateCategoryEndpoint(r *gin.RouterGroup) {
+	repo := &repository.CategoryRepository{}
+	service := &service.CategoryService{Repo: repo}
+	handler := &handler.CategoryHandler{Service: service}
+	r.GET("", handler.GetCategories)
 }
