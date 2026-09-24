@@ -7,6 +7,7 @@ import ProfileView from '@/views/ProfileView.vue'
 import RegisterFormView from '@/views/RegisterFormView.vue'
 import SearchResultView from '@/views/SearchResultView.vue'
 import WishlistView from '@/views/WishlistView.vue'
+import nProgress from 'nprogress'
 import { createRouter, createWebHistory } from 'vue-router'
 
 const router = createRouter({
@@ -61,6 +62,14 @@ const router = createRouter({
       ]
     }
   ],
+})
+
+router.beforeEach(() => {
+  nProgress.start()
+})
+
+router.afterEach(() => {
+  nProgress.done()
 })
 
 export default router
