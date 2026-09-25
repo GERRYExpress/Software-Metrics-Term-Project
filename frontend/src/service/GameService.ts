@@ -10,6 +10,9 @@ const apiClient = axios.create({
 
 export default {
     getGames() {
-        return apiClient.get('/games?_limit=' + 10 + '&_page=' + 1)
+        return apiClient.get('/api/v1/games?_limit=' + 10 + '&_page=' + 1)
+    },
+    getGame(id: number) {
+        return apiClient.get('/api/v1/games/' + id)
     }
 }
