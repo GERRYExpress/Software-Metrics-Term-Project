@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import AppCard from '@/components/AppCard.vue';
 import BaseButton from '@/components/BaseButton.vue';
+import MediaCarousel from '@/components/MediaCarousel.vue';
 import ProductMainContainer from '@/components/ProductMainContainer.vue';
 import SystemRequirement from '@/components/SystemRequirement.vue';
 import { useGameStore } from '@/stores/game';
@@ -15,7 +16,7 @@ const { name, description, releaseDate, categories, price, media, hardwareRequir
 <template>
     <ProductMainContainer>
         <AppCard class="grid grid-cols-2">
-            <div>CAROUSEL {{ media }} {{ posterUrl }}</div>
+            <MediaCarousel :media :posterUrl/>
             <div class="flex flex-col">
                 <h2>{{ name }}</h2>
                 <h3>Published on <b>{{ releaseDate ?? 'XX/XX/XXXX' }}</b> by <b>{{ account?.username ?? 'USER' }}</b></h3>

@@ -13,7 +13,7 @@ defineProps<{
 onMounted(() => {
     watchEffect(() => {
         /* If not searched or filter */
-        if (route.query.keyword === '' && route.query.category === '') {
+        if (route.query.keyword === '' && route.query.category === 'all') {
             GameService.getGames()
                 .then(res => {
                     games.value = res.data
@@ -26,7 +26,7 @@ onMounted(() => {
 
 <template>
     <ProductMainContainer class="flex flex-col">
-        <h1 class="w-full">Search Results</h1>
+        <h1 class="w-full">Search Results: {{ $route.query.keyword }}</h1>
         <div class="grid grid-cols-5 gap-5 w-auto">
             <GameCard v-for="game in games" :key="game.id" :game/>
         </div>
