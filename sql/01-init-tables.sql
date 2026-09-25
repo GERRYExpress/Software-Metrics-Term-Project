@@ -20,6 +20,7 @@ CREATE TABLE products (
 	product_id INT NOT NULL UNIQUE AUTO_INCREMENT,
     name VARCHAR(50) NOT NULL UNIQUE,
     description VARCHAR(1024) NOT NULL,
+    release_Date DATE NOT NULL DEFAULT now(),
     price DECIMAL(10, 2) NOT NULL,
     poster_url VARCHAR(255) NOT NULL,
     user_id INT NOT NULL,
