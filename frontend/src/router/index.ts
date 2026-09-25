@@ -3,6 +3,7 @@ import CartView from '@/views/CartView.vue'
 import ContactView from '@/views/ContactView.vue'
 import LandingView from '@/views/LandingView.vue'
 import LoginFormView from '@/views/LoginFormView.vue'
+import ProductDetailView from '@/views/ProductDetailView.vue'
 import ProfileView from '@/views/ProfileView.vue'
 import RegisterFormView from '@/views/RegisterFormView.vue'
 import SearchResultView from '@/views/SearchResultView.vue'
@@ -58,6 +59,12 @@ const router = createRouter({
           path: '/contacts',
           name: 'contact-view',
           component: ContactView
+        },
+        {
+          path: '/games/:id',
+          name: 'game-detail-view',
+          component: ProductDetailView,
+          props: true
         }
       ]
     }
