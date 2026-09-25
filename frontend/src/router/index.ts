@@ -1,3 +1,5 @@
+import GameService from '@/service/GameService'
+import { useGameStore } from '@/stores/game'
 import BuyerLayoutView from '@/views/BuyerLayoutView.vue'
 import CartView from '@/views/CartView.vue'
 import ContactView from '@/views/ContactView.vue'
@@ -64,6 +66,15 @@ const router = createRouter({
           path: '/games/:id',
           name: 'game-detail-view',
           component: ProductDetailView,
+          beforeEnter: (route) => {
+            const gameStore = useGameStore()
+            GameService.getGame(Number(route.params.id))
+              .then(res => {
+                gameStore.save(res.data)
+              })
+              .catch(() => {
+              })
+          },
           props: true
         }
       ]
