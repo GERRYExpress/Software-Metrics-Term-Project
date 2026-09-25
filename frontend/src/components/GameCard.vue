@@ -2,6 +2,7 @@
 import { Heart, ShoppingCartPlus } from '@lucide/vue';
 import BaseButton from './BaseButton.vue';
 import type { Game } from '@/types.ts';
+import { Image } from '@unpic/vue';
 defineProps<{
     game: Game
 }>()
@@ -10,7 +11,7 @@ defineProps<{
 
 <template>
     <RouterLink :to="{ name: 'game-detail-view', params: { id: game.id } }" class="w-auto w-max-72 rounded-xl bg-tertiary flex flex-col relative">
-        <img class="w-full h-48 rounded-t-xl pointer-events-none object-cover object-top" :src="game.posterUrl" alt="">
+        <Image layout="constrained" class="w-full h-48 rounded-t-xl pointer-events-none object-cover object-top" :src="game.posterUrl" alt=""/>
         <div class="bg-tertiary w-24 px-2 text-center truncate line-clamp-1 absolute place-self-end font-normal rounded-bl-xl rounded-tr-xl">
             {{ game.categories.at(0) ?? 'CATEGORY' }}
         </div>
