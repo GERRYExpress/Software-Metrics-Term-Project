@@ -7,7 +7,7 @@ import BaseButton from './BaseButton.vue';
 
 
 <template>
-    <AppCard class="grid grid-cols-3 place-items-start! shadow-md hover:shadow-xl transition-all hover:scale-101 relative">
+    <AppCard class="grid grid-cols-3 place-items-start! w-lg shadow-md hover:shadow-xl transition-all hover:scale-101 relative">
         <img class="w-24 rounded-xl col-span-1" src="https://picsum.photos/128/192" alt="">
         <div class="grid grid-cols-2 col-span-2 w-full">
             <div class=" w-full text-start">
