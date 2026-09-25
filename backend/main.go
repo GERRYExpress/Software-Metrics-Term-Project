@@ -56,6 +56,7 @@ func CreateGameEndpoint(r *gin.RouterGroup) {
 	service := &service.GameService{Repo: repo}
 	handler := &handler.GameHandler{Service: service}
 	r.GET("", handler.GetGames)
+	r.GET("/:id", handler.GetGame)
 }
 
 func CreateCategoryEndpoint(r *gin.RouterGroup) {

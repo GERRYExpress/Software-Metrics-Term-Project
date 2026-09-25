@@ -12,3 +12,7 @@ type GameService struct {
 func (s *GameService) GetGames() ([]model.Game, error) {
 	return s.Repo.GetGames()
 }
+
+func (s *GameService) GetGame(id int) (*model.GameDetail, error) {
+	return s.Repo.GetGame(id)
+}
