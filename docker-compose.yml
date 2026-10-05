@@ -15,6 +15,9 @@ services:
     restart: always
     ports:
       - "9000:8080"
-
+  qg:
+    image: sonarqube:latest
+    ports:
+      - "9001:9000"
 volumes:
   mdata:
