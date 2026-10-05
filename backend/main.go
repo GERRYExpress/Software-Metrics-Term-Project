@@ -39,6 +39,9 @@ func main() {
 
 			categories := v1.Group("/categories")
 			CreateCategoryEndpoint(categories)
+
+			wishlists := v1.Group("/wishlists")
+			CreateWishlistEndpoint(wishlists)
 		}
 	}
 	r.Run(":8080")
@@ -64,4 +67,13 @@ func CreateCategoryEndpoint(r *gin.RouterGroup) {
 	service := &service.CategoryService{Repo: repo}
 	handler := &handler.CategoryHandler{Service: service}
 	r.GET("", handler.GetCategories)
+}
+
+func CreateWishlistEndpoint(r *gin.RouterGroup) {
+	repo := &repository.WishlistRepository{}
+	service := &service.WishlistService{Repo: repo}
+	handler := &handler.WishlistHandler{Service: service}
+	r.GET("/:userID", handler.GetWishlists)
+	r.POST("/:userID/:gameID", handler.AddWishlist)
+	r.DELETE("/:userID/:gameID", handler.DeleteWishlist)
 }
