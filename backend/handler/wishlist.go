@@ -29,12 +29,12 @@ func (h *WishlistHandler) GetWishlists(c *gin.Context) {
 }
 
 func (h *WishlistHandler) AddWishlist(c *gin.Context) {
-	convUID, err := strconv.Atoi(c.Query("userID"))
+	convUID, err := strconv.Atoi(c.Param("userID"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	convGID, err := strconv.Atoi(c.Query("gameID"))
+	convGID, err := strconv.Atoi(c.Param("gameID"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return

@@ -54,24 +54,24 @@ func (r *WishlistRepository) GetWishlists(userId int) ([]model.Wishlist, error) 
 
 		wishlistPosition, ok := wishlistIndex[productID]
 		if !ok {
-			wishlists = append(wishlists, model.Wishlist{
+			wishlist := model.Wishlist{
 				UserID:       wishlistUserID,
 				ProductID:    productID,
 				WishlistDate: wishlistDate,
 				Game:         model.Game{},
-			})
+			}
+			if gameName != nil {
+				wishlist.Game = model.Game{
+					ID:         productID,
+					Name:       *gameName,
+					Price:      *gamePrice,
+					PosterUrl:  *posterUrl,
+					Categories: make([]model.Category, 0),
+				}
+			}
+			wishlists = append(wishlists, wishlist)
 			wishlistPosition = len(wishlists) - 1
 			wishlistIndex[productID] = wishlistPosition
-		}
-
-		if gameName != nil {
-			wishlists[wishlistPosition].Game = model.Game{
-				ID:         productID,
-				Name:       *gameName,
-				Price:      *gamePrice,
-				PosterUrl:  *posterUrl,
-				Categories: make([]model.Category, 0),
-			}
 		}
 
 		if categoryID != nil {
