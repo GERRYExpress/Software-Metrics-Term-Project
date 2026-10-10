@@ -44,7 +44,9 @@ const router = createRouter({
           name: 'search-result-view',
           component: SearchResultView,
           meta: { title: 'Search' },
-          props: true
+          props: (route) => ({
+            page: Number.parseInt(route.query.page ? route.query.page.toString() : '1')
+          })
         },
         {
           path: '/profile',

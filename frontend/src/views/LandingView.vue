@@ -9,7 +9,7 @@ const games = ref<Game[] | null>()
 
 onMounted(() => {
     watchEffect(() => {
-        GameService.getGames()
+        GameService.getGames(8, 1)
             .then(res => {
                 games.value = res.data
             })

@@ -4,7 +4,7 @@ import { ChevronsUpDown } from '@lucide/vue';
 import { useId } from 'vue';
 const inputId = useId()
 
-const modelValue = defineModel<number>()
+const modelValue = defineModel()
 interface OptionProps {
     options: Category[],
     label?: string
@@ -15,13 +15,14 @@ defineProps<OptionProps>()
 <template>
     {{ label }}
     <div class="flex flex-row">
+        <slot/>
         <select :id="inputId"
             class="bg-white text-tertiary! transition-all hover:scale-101 h-full pl-2.5 pr-6 text-lg align-middle appearance-none border border-gray-400 focus:border-secondary focus:outline-none"
             v-bind="$attrs" v-if="options"
             v-model="modelValue">
             <option v-for="option in options" :value="option" :key="option.id"
                 class="odd:bg-tertiary/10 transition-all"
-                :selected="option.id === modelValue">{{ option.name }}</option>
+                :selected="option === modelValue">{{ option.name }}</option>
         </select>
         <ChevronsUpDown class="absolute top-1.5 right-0.5 pointer-events-none fill-tertiary"/>
     </div>
