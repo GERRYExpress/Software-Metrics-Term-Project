@@ -24,6 +24,7 @@ export interface Account {
 
 export interface Game {
     id: number
+    userId?: number
     releaseDate: Date
     categories: Category[]
     name: string
@@ -35,6 +36,7 @@ export interface Game {
 
 export interface GameDetail {
     id: number | null
+    userId?: number
     releaseDate: Date | null
     categories: Category[] | null
     name: string
@@ -83,4 +85,29 @@ export interface Cart {
     productId: number
     cartDate: Date
     game: Game
+}
+
+export interface GameInput {
+    userId: number
+    name: string
+    description: string
+    releaseDate: string
+    price: number
+    posterUrl: string
+    categoryIds: number[]
+    hardwareRequirements: HardwareInput[]
+    mediaUrls: string[]
+}
+
+export interface HardwareInput {
+    operatingSystem: string
+    processor: string
+    memory: string
+    graphicsCard: string
+    directXVersion: string
+    network: string
+    storage: string
+    soundcard: string
+    additionalNote: string
+    type: 'min' | 'recommended'
 }

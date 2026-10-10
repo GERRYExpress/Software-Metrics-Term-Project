@@ -1,4 +1,5 @@
 import GameService from '@/service/GameService'
+import { useSellerStore } from '@/stores/seller'
 import { useGameStore } from '@/stores/game'
 import BuyerLayoutView from '@/views/BuyerLayoutView.vue'
 import CartView from '@/views/CartView.vue'
@@ -10,6 +11,10 @@ import ProductDetailView from '@/views/ProductDetailView.vue'
 import ProfileView from '@/views/ProfileView.vue'
 import RegisterFormView from '@/views/RegisterFormView.vue'
 import SearchResultView from '@/views/SearchResultView.vue'
+import SellerDashboardView from '@/views/SellerDashboardView.vue'
+import SellerLayoutView from '@/views/SellerLayoutView.vue'
+import SellerProductFormView from '@/views/SellerProductFormView.vue'
+import SellerProfileView from '@/views/SellerProfileView.vue'
 import WishlistView from '@/views/WishlistView.vue'
 import nProgress from 'nprogress'
 import { createRouter, createWebHistory } from 'vue-router'
@@ -93,11 +98,59 @@ const router = createRouter({
           props: true
         }
       ]
+    },
+    {
+      path: '/seller',
+      name: 'seller-layout-view',
+      component: SellerLayoutView,
+      meta: { title: 'Seller Center', requiresSeller: true },
+      children: [
+        {
+          path: '',
+          redirect: { name: 'seller-dashboard-view' }
+        },
+        {
+          path: 'dashboard',
+          name: 'seller-dashboard-view',
+          component: SellerDashboardView,
+          meta: { title: 'Seller Dashboard', requiresSeller: true }
+        },
+        {
+          path: 'products/add',
+          name: 'seller-product-add-view',
+          component: SellerProductFormView,
+          meta: { title: 'Add Product', requiresSeller: true }
+        },
+        {
+          path: 'products/:id/edit',
+          name: 'seller-product-edit-view',
+          component: SellerProductFormView,
+          meta: { title: 'Edit Product', requiresSeller: true }
+        },
+        {
+          path: 'profile',
+          name: 'seller-profile-view',
+          component: SellerProfileView,
+          meta: { title: 'Seller Profile', requiresSeller: true }
+        }
+      ]
     }
   ],
 })
 
-router.beforeEach(to => {
+router.beforeEach(async to => {
+  if (to.matched.some(record => record.meta.requiresSeller)) {
+    const sellerStore = useSellerStore()
+    try {
+      await sellerStore.loadSeller()
+    } catch {
+      return {
+        name: 'login-view',
+        query: { role: 'true', redirect: to.fullPath }
+      }
+    }
+  }
+
   const defaultTitle = 'KD5F'
   document.title = to.meta.title ? `KD5F - ${to.meta.title}` : defaultTitle
   nProgress.start()

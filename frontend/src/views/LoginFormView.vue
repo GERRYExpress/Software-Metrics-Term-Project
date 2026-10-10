@@ -28,7 +28,7 @@ const handleLogin = () => {
     /* Login query */
     
     router.push({
-        name: 'landing-page-view'
+        name: credential.value.isSeller ? 'seller-dashboard-view' : 'landing-page-view'
     })
 }
 
