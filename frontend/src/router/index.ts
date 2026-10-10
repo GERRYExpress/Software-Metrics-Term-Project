@@ -3,6 +3,7 @@ import { useGameStore } from '@/stores/game'
 import BuyerLayoutView from '@/views/BuyerLayoutView.vue'
 import CartView from '@/views/CartView.vue'
 import ContactView from '@/views/ContactView.vue'
+import IdentificationView from '@/views/IdentificationView.vue'
 import LandingView from '@/views/LandingView.vue'
 import LoginFormView from '@/views/LoginFormView.vue'
 import ProductDetailView from '@/views/ProductDetailView.vue'
@@ -16,6 +17,12 @@ import { createRouter, createWebHistory } from 'vue-router'
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
+    {
+      path: '/identification',
+      name: 'identification-view',
+      component: IdentificationView,
+      meta: { title: 'Identification' }
+    },
     {
       path: '/login',
       name: 'login-view',
