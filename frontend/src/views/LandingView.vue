@@ -60,7 +60,7 @@ const closeWelcome = () => {
 </script>
 
 <template>
-    <ProductMainContainer class="flex flex-col w-5xl place-self-center gap-y-6">
+    <ProductMainContainer class="flex flex-col w-4xl place-self-center gap-y-6">
         <!-- Highlights Carousel -->
         <div class="flex flex-col w-full gap-y-2">
             <h1 class="w-full text-2xl">HIGHLIGHTS</h1>
