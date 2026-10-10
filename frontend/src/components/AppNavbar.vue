@@ -47,7 +47,7 @@ const handleSearch = () => {
 }
 
 const handleFilter = () => {
-    router.push({ name: 'search-result-view', query: { ...route.query, category: selectedCategory.value?.name } })
+    router.push({ name: 'search-result-view', query: { ...route.query, category: selectedCategory.value?.name, page: 1 } })
 }
 </script>
 
@@ -57,7 +57,7 @@ const handleFilter = () => {
         <div class="relative flex flex-col items-start justify-center w-1/2">
             <Search class="absolute left-1.5 text-white/50"/>
             <BaseInput @input="handleSearch" v-model="searchKeyword" class="px-8" placeholder="Search games..."/>
-            <BaseSelect @input="handleFilter" v-model="selectedCategory" class="absolute top-0 right-0 rounded-r-lg text-xs" v-if="categories" :options="categories"/>
+            <BaseSelect @change="handleFilter" v-model="selectedCategory" class="absolute top-0 right-0 rounded-r-lg text-xs" v-if="categories" :options="categories"/>
         </div>
         <AppNavItem
             v-for="navItem in navItems"
