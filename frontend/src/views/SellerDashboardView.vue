@@ -5,10 +5,11 @@ import BaseInput from '@/components/BaseInput.vue'
 import ProductMainContainer from '@/components/ProductMainContainer.vue'
 import CategoryService from '@/service/CategoryService'
 import GameService from '@/service/GameService'
+import CategoryTable from '@/components/CategoryTable.vue'
 import { useSellerStore } from '@/stores/seller'
 import { useUserActionStore } from '@/stores/userAction'
 import type { Category, Game } from '@/types'
-import { Edit3, Eye, EyeOff, Plus, Trash2 } from '@lucide/vue'
+import { Plus } from '@lucide/vue'
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
@@ -19,7 +20,6 @@ const categories = ref<Category[]>([])
 const products = ref<Game[]>([])
 const newCategoryName = ref('')
 const editingCategoryId = ref<number | null>(null)
-const editingCategoryName = ref('')
 const isLoading = ref(true)
 const isSavingCategory = ref(false)
 const deletingProductId = ref<number | null>(null)
@@ -66,18 +66,8 @@ async function addCategory() {
     }
 }
 
-function beginEditCategory(category: Category) {
-    editingCategoryId.value = category.id
-    editingCategoryName.value = category.name
-}
-
-function cancelEditCategory() {
-    editingCategoryId.value = null
-    editingCategoryName.value = ''
-}
-
-async function saveCategory(category: Category) {
-    const name = editingCategoryName.value.trim()
+async function saveCategory(category: Category, rawName: string) {
+    const name = rawName.trim()
     if (!name) {
         errorMessage.value = 'Category name cannot be empty.'
         return
@@ -88,7 +78,7 @@ async function saveCategory(category: Category) {
     try {
         await CategoryService.updateCategory(category.id, name, category.isHidden)
         await refreshCategories()
-        cancelEditCategory()
+        editingCategoryId.value = null
         notify('Category updated successfully.')
     } catch (error) {
         errorMessage.value = getErrorMessage(error, 'Unable to update the category.')
@@ -200,54 +190,15 @@ function getErrorMessage(error: unknown, fallback: string) {
                 <div v-if="categories.length === 0" class="rounded-lg bg-tertiary p-5 text-center text-white/60">
                     No categories have been created yet.
                 </div>
-                <div v-else class="overflow-x-auto">
-                    <table class="w-full min-w-[640px] text-left">
-                        <thead class="border-b border-white/10 text-sm text-white/60">
-                            <tr>
-                                <th class="p-3">Name</th>
-                                <th class="p-3">Visibility</th>
-                                <th class="p-3 text-right">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr v-for="category in categories" :key="category.id" class="border-b border-white/5">
-                                <td class="p-3">
-                                    <input
-                                        v-if="editingCategoryId === category.id"
-                                        v-model="editingCategoryName"
-                                        class="rounded-lg bg-tertiary p-2 text-white outline-none focus:ring-2 focus:ring-action"
-                                        @keyup.enter="saveCategory(category)"
-                                        @keyup.esc="cancelEditCategory"
-                                    />
-                                    <span v-else>{{ category.name }}</span>
-                                </td>
-                                <td class="p-3">
-                                    <span :class="category.isHidden ? 'text-white/50' : 'text-action'">
-                                        {{ category.isHidden ? 'Hidden' : 'Visible' }}
-                                    </span>
-                                </td>
-                                <td class="flex justify-end gap-2 p-3">
-                                    <template v-if="editingCategoryId === category.id">
-                                        <button type="button" class="rounded-lg bg-action px-3 py-2 text-sm font-bold text-tertiary cursor-pointer" @click="saveCategory(category)">Save</button>
-                                        <button type="button" class="rounded-lg bg-secondary px-3 py-2 text-sm cursor-pointer" @click="cancelEditCategory">Cancel</button>
-                                    </template>
-                                    <template v-else>
-                                        <button type="button" class="rounded-lg bg-secondary p-2 cursor-pointer" :title="`Edit ${category.name}`" @click="beginEditCategory(category)">
-                                            <Edit3 class="size-4"/>
-                                        </button>
-                                        <button type="button" class="rounded-lg bg-secondary p-2 cursor-pointer" :title="category.isHidden ? 'Show category' : 'Hide category'" @click="toggleCategory(category)">
-                                            <EyeOff v-if="category.isHidden" class="size-4"/>
-                                            <Eye v-else class="size-4"/>
-                                        </button>
-                                        <button type="button" class="rounded-lg bg-red p-2 cursor-pointer" :title="`Delete ${category.name}`" @click="deleteCategory(category)">
-                                            <Trash2 class="size-4"/>
-                                        </button>
-                                    </template>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
+                    <CategoryTable
+                        v-else
+                        v-model:editing-id="editingCategoryId"
+                        :categories="categories"
+                        :is-loading="isSavingCategory"
+                        @save="saveCategory"
+                        @toggle="toggleCategory"
+                        @remove="deleteCategory"
+                    />
             </AppCard>
 
             <AppCard class="w-full gap-y-4!">
