@@ -1,4 +1,5 @@
 import GameService from '@/service/GameService'
+import WishlistService from '@/service/WishlistService'
 import { useGameStore } from '@/stores/game'
 import BuyerLayoutView from '@/views/BuyerLayoutView.vue'
 import CartView from '@/views/CartView.vue'
@@ -48,7 +49,7 @@ const router = createRouter({
           component: ProfileView
         },
         {
-          path: '/cart',
+          path: '/carts',
           name: 'cart-view',
           component: CartView
         },
