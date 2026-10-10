@@ -7,13 +7,14 @@ import BaseToggle from '@/components/BaseToggle.vue';
 import type { LoginForm } from '@/types';
 import { UserRound } from '@lucide/vue';
 import { ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 const router = useRouter()
+const route = useRoute()
 const loginOptions = ['Buyer', 'Seller']
 const credential = ref<LoginForm>({
     username: '',
     password: '',
-    isSeller: false
+    isSeller: route.query.role === 'true'
 })
 
 const toggleRole = () => {

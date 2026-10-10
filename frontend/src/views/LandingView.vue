@@ -110,9 +110,16 @@ const closeWelcome = () => {
             </div>
         </div>
 
-        <RouterLink :to="{ name: 'search-result-view' }" class="place-self-center my-4 text-lg">
-            EXPLORE MORE GAMES &rarr;
-        </RouterLink>
+        <div class="flex flex-col items-center gap-y-2 my-4 text-center">
+            <RouterLink :to="{ name: 'search-result-view' }" class="text-xl">
+                EXPLORE MORE GAMES &rarr;
+            </RouterLink>
+            <p class="text-white/60 text-sm">
+                Or get started:
+                <RouterLink :to="{ name: 'identification-view' }" class="text-action">Sign In</RouterLink> or
+                <RouterLink :to="{ name: 'register-view' }" class="text-action">Register</RouterLink>
+            </p>
+        </div>
 
         <!-- Welcome Greeting Modal -->
         <WelcomeModal :show="showWelcome" @close="closeWelcome"/>
