@@ -21,11 +21,13 @@ const router = createRouter({
       path: '/login ',
       name: 'login-view',
       component: LoginFormView,
+      meta: { title: 'Login' }
     },
     {
       path: '/register',
       name: 'register-view',
-      component: RegisterFormView
+      component: RegisterFormView,
+      meta: { title: 'Register' }
     },
     {
       path: '',
@@ -35,33 +37,39 @@ const router = createRouter({
         {
           path: '',
           name: 'landing-page-view',
-          component: LandingView
+          component: LandingView,
+          meta: { title: 'Home' }
         },
         {
           path: '/search',
           name: 'search-result-view',
           component: SearchResultView,
+          meta: { title: 'Search' },
           props: true
         },
         {
           path: '/profile',
           name: 'profile-view',
-          component: ProfileView
+          component: ProfileView,
+          meta: { title: 'Profile' }
         },
         {
           path: '/carts',
           name: 'cart-view',
-          component: CartView
+          component: CartView,
+          meta: { title: 'Carts' }
         },
         {
           path: '/wishlists',
           name: 'wishlist-view',
-          component: WishlistView
+          component: WishlistView,
+          meta: { title: 'Wishlists' }
         },
         {
           path: '/contacts',
           name: 'contact-view',
-          component: ContactView
+          component: ContactView,
+          meta: { title: 'Contacts' }
         },
         {
           path: '/games/:id',
@@ -83,7 +91,9 @@ const router = createRouter({
   ],
 })
 
-router.beforeEach(() => {
+router.beforeEach(to => {
+  const defaultTitle = 'KD5F'
+  document.title = to.meta.title ? `KD5F - ${to.meta.title}` : defaultTitle
   nProgress.start()
 })
 
