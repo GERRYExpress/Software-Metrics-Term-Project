@@ -19,9 +19,9 @@ onMounted(() => {
 </script>
 
 <template>
-    <ProductMainContainer>
+    <ProductMainContainer class="flex flex-col w-4xl place-self-center">
         <h1 class="w-full">HIGHLIGHT</h1>
-        <div class="bg-tertiary w-full h-64 rounded-xl"></div>
+        <img src="/Landing/Landing-Page-Carousel-5.png" class="bg-tertiary w-full h-full rounded-xl"/>
         <div v-if="games" class="grid grid-cols-5 gap-5 w-auto">
             <GameCard v-for="game in games.slice(0, 10)" :game :key="game.id"/>
         </div>
