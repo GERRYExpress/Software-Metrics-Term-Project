@@ -12,17 +12,119 @@ type GameRepository struct {
 	Model model.Game
 }
 
-func (r *GameRepository) GetGames() ([]model.Game, error) {
-	query, args, err := squirrel.
-		Select(
-			"p.product_id", "p.name", "p.description", "p.price", "p.poster_url",
-			"c.category_id", "c.name", "c.is_hidden",
-		).
-		From("products p").
+const (
+	productIDField       = "product_id"
+	nameField            = "name"
+	descriptionField     = "description"
+	priceField           = "price"
+	posterURLField       = "poster_url"
+	releaseDateField     = "release_date"
+	categoryIDField      = "category_id"
+	categoryHiddenField  = "is_hidden"
+	userIDField          = "user_id"
+	usernameField        = "username"
+	requirementIDField   = "requirement_id"
+	operatingSystemField = "operating_system"
+	processorField       = "processor"
+	memoryField          = "memory"
+	graphicsCardField    = "graphics_card"
+	directXVersionField  = "directx_version"
+	networkField         = "network"
+	storageField         = "storage"
+	soundcardField       = "soundcard"
+	additionalNoteField  = "additional_note"
+	requirementTypeField = "type"
+	mediaIDField         = "media_id"
+	mediaURLField        = "media_url"
+)
+
+const existQuery = "EXISTS (SELECT 1 FROM product_categories pc JOIN categories c ON c.category_id = pc.category_id WHERE pc.product_id = products.product_id AND c.name = ?)"
+
+func qualify(alias string, fields ...string) []string {
+	columns := make([]string, len(fields))
+	prefix := ""
+	if alias != "" {
+		prefix = alias + "."
+	}
+	for i, field := range fields {
+		columns[i] = prefix + field
+	}
+	return columns
+}
+
+func productColumns(alias string) []string {
+	return qualify(alias, productIDField, nameField, descriptionField, priceField, posterURLField)
+}
+
+func listColumns() []string {
+	return append(productColumns("p"), qualify("c", categoryIDField, nameField, categoryHiddenField)...)
+}
+
+func detailColumns() []string {
+	columns := append(
+		qualify("p", productIDField, nameField, descriptionField, priceField, posterURLField, releaseDateField),
+		qualify("c", categoryIDField, nameField)...,
+	)
+	columns = append(columns, qualify("a", userIDField, usernameField)...)
+	columns = append(columns, qualify("hr",
+		requirementIDField, operatingSystemField, processorField, memoryField, graphicsCardField,
+		directXVersionField, networkField, storageField, soundcardField, additionalNoteField, requirementTypeField,
+	)...)
+	return append(columns, qualify("m", mediaIDField, mediaURLField)...)
+}
+
+func pagedProducts(keyword, category string, limit, page int) squirrel.SelectBuilder {
+	query := squirrel.
+		Select(productColumns("")...).
+		From("products").
+		OrderBy("product_id").
+		Limit(uint64(limit)).
+		Offset(uint64((page - 1) * limit))
+	if keyword != "" {
+		query = query.Where(squirrel.Like{"name": "%" + keyword + "%"})
+	}
+	if category != "" {
+		query = query.Where(squirrel.Expr(existQuery, category))
+	}
+	return query
+}
+
+func gamesQuery(products squirrel.SelectBuilder) squirrel.SelectBuilder {
+	return squirrel.
+		Select(listColumns()...).
+		FromSelect(products, "p").
 		LeftJoin("product_categories pc ON pc.product_id = p.product_id").
 		LeftJoin("categories c ON c.category_id = pc.category_id").
 		OrderBy("p.product_id", "c.category_id").
-		ToSql()
+		PlaceholderFormat(squirrel.Question)
+}
+
+func (r *GameRepository) GetGamesCount(keyword, category string) (int, error) {
+	queryBuilder := squirrel.
+		Select("COUNT(*)").
+		From("products").
+		PlaceholderFormat(squirrel.Question)
+	if keyword != "" {
+		queryBuilder = queryBuilder.Where(squirrel.Like{"name": "%" + keyword + "%"})
+	}
+	if category != "" {
+		queryBuilder = queryBuilder.Where(squirrel.Expr(existQuery, category))
+	}
+
+	query, args, err := queryBuilder.ToSql()
+	if err != nil {
+		return 0, err
+	}
+
+	var count int
+	if err := config.DB.QueryRow(query, args...).Scan(&count); err != nil {
+		return 0, err
+	}
+	return count, nil
+}
+
+func (r *GameRepository) GetGames(category string, limit, page int) ([]model.Game, error) {
+	query, args, err := gamesQuery(pagedProducts("", category, limit, page)).ToSql()
 	if err != nil {
 		return nil, err
 	}
@@ -54,24 +156,14 @@ func (r *GameRepository) GetGames() ([]model.Game, error) {
 
 		gamePosition, ok := gameIndex[gameID]
 		if !ok {
-			games = append(games, model.Game{
-				ID:          gameID,
-				Name:        name,
-				Description: description,
-				Price:       price,
-				PosterUrl:   posterURL,
-				Categories:  make([]model.Category, 0),
-			})
+			games = append(games, model.NewGame(gameID, name, description, price, posterURL))
 			gamePosition = len(games) - 1
 			gameIndex[gameID] = gamePosition
 		}
 
 		if categoryID != nil {
-			games[gamePosition].Categories = append(games[gamePosition].Categories, model.Category{
-				ID:       *categoryID,
-				Name:     *categoryName,
-				IsHidden: *isHidden,
-			})
+			games[gamePosition].Categories = append(games[gamePosition].Categories,
+				model.NewCategory(*categoryID, *categoryName, *isHidden))
 		}
 	}
 	if err := rows.Err(); err != nil {
@@ -80,20 +172,8 @@ func (r *GameRepository) GetGames() ([]model.Game, error) {
 	return games, nil
 }
 
-func (r *GameRepository) GetGamesByName(keyword string) ([]model.Game, error) {
-	searchPattern := "%" + keyword + "%"
-	mysqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Question)
-	query, args, err := mysqlBuilder.
-		Select(
-			"p.product_id", "p.name", "p.description", "p.price", "p.poster_url",
-			"c.category_id", "c.name", "c.is_hidden",
-		).
-		From("products p").
-		LeftJoin("product_categories pc ON pc.product_id = p.product_id").
-		LeftJoin("categories c ON c.category_id = pc.category_id").
-		OrderBy("p.product_id", "c.category_id").
-		Where(squirrel.Like{"p.name": searchPattern}).
-		ToSql()
+func (r *GameRepository) GetGamesByName(keyword, category string, limit, page int) ([]model.Game, error) {
+	query, args, err := gamesQuery(pagedProducts(keyword, category, limit, page)).ToSql()
 
 	if err != nil {
 		return nil, err
@@ -126,24 +206,14 @@ func (r *GameRepository) GetGamesByName(keyword string) ([]model.Game, error) {
 
 		gamePosition, ok := gameIndex[gameID]
 		if !ok {
-			games = append(games, model.Game{
-				ID:          gameID,
-				Name:        name,
-				Description: description,
-				Price:       price,
-				PosterUrl:   posterURL,
-				Categories:  make([]model.Category, 0),
-			})
+			games = append(games, model.NewGame(gameID, name, description, price, posterURL))
 			gamePosition = len(games) - 1
 			gameIndex[gameID] = gamePosition
 		}
 
 		if categoryID != nil {
-			games[gamePosition].Categories = append(games[gamePosition].Categories, model.Category{
-				ID:       *categoryID,
-				Name:     *categoryName,
-				IsHidden: *isHidden,
-			})
+			games[gamePosition].Categories = append(games[gamePosition].Categories,
+				model.NewCategory(*categoryID, *categoryName, *isHidden))
 		}
 	}
 	if err := rows.Err(); err != nil {
@@ -155,10 +225,7 @@ func (r *GameRepository) GetGamesByName(keyword string) ([]model.Game, error) {
 func (r *GameRepository) GetGame(id int) (*model.GameDetail, error) {
 	mysqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Question)
 	query, args, err := mysqlBuilder.
-		Select("p.product_id", "p.name", "p.description", "p.price", "p.poster_url", "p.release_date",
-			"c.category_id", "c.name", "a.user_id", "a.username", "hr.requirement_id", "hr.operating_system", "hr.processor", "hr.memory", "hr.graphics_card", "hr.directx_version",
-			"hr.network", "hr.storage", "hr.soundcard", "hr.additional_note", "hr.type",
-			"m.media_id", "m.media_url").
+		Select(detailColumns()...).
 		From("products p").
 		LeftJoin("product_categories pc ON pc.product_id = p.product_id").
 		LeftJoin("categories c ON pc.category_id = c.category_id").
@@ -211,48 +278,25 @@ func (r *GameRepository) GetGame(id int) (*model.GameDetail, error) {
 			return nil, err
 		}
 		if !initialized {
-			output = model.GameDetail{
-				ID:                  gameID,
-				Name:                name,
-				Description:         description,
-				Price:               price,
-				PosterUrl:           posterUrl,
-				ReleaseDate:         releaseDate,
-				Account:             model.Account{},
-				Categories:          make([]model.Category, 0),
-				HardwareRequirement: make([]model.Hardware, 0),
-				Media:               make([]model.Media, 0),
-			}
+			output = model.NewGameDetail(gameID, name, description, price, posterUrl, releaseDate)
 			initialized = true
 		}
 
 		if categoryID != nil {
-			output.Categories = append(output.Categories, model.Category{
-				ID:   *categoryID,
-				Name: *categoryName,
-			})
+			output.Categories = append(output.Categories, model.NewCategory(*categoryID, *categoryName, false))
 		}
 
 		if userID != nil {
-			output.Account = model.Account{
-				ID:       *userID,
-				Username: *username,
-			}
+			output.Account = model.NewAccount(*userID, *username)
 		}
 		if requirementID != nil {
-			output.HardwareRequirement = append(output.HardwareRequirement, model.Hardware{
-				ID:             *requirementID,
-				OS:             *operatingSystem,
-				Processor:      *processor,
-				Memory:         *memory,
-				GraphicsCard:   *graphicsCard,
-				DirectXVersion: *directXVersion,
-				Network:        *network,
-				Storage:        *storage,
-				Soundcard:      *soundcard,
-				AdditionalNote: *additionalNote,
-				Type:           *reqType,
-			})
+			output.HardwareRequirement = append(output.HardwareRequirement,
+				model.NewHardware(model.HardwareData{
+					ID: *requirementID, OS: *operatingSystem, Processor: *processor,
+					Memory: *memory, GraphicsCard: *graphicsCard,
+					DirectXVersion: *directXVersion, Network: *network, Storage: *storage,
+					Soundcard: *soundcard, AdditionalNote: *additionalNote, Type: *reqType,
+				}))
 		}
 	}
 

@@ -62,3 +62,7 @@ profile.cov
 # Go workspace file
 go.work
 go.work.sum
+
+*/.scannerwork
+.scannerwork/*
+.sonar*
