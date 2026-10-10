@@ -48,7 +48,8 @@ const handleWishlistAction = () => {
 
 <template>
     <ProductMainContainer>
-        <AppCard class="grid grid-cols-2 gap-x-5">
+        <AppCard class="grid grid-cols-2 pt-7.5 gap-x-5 relative">
+            <RouterLink class="absolute top-1 left-5" @click="$router.go(-1)" to="">Back</RouterLink>
             <Image class="rounded-xl w-full" layout="constrained" :src="posterUrl"/>
             <div class="flex flex-col place-self-start h-full gap-y-2">
                 <h2>{{ name }}</h2>

@@ -31,7 +31,7 @@ const prevBanner = () => {
 
 onMounted(() => {
     watchEffect(() => {
-        GameService.getGames()
+        GameService.getGames(8, 1)
             .then(res => {
                 games.value = res.data
             })
@@ -60,11 +60,11 @@ const closeWelcome = () => {
 </script>
 
 <template>
-    <ProductMainContainer class="flex flex-col w-5xl place-self-center gap-y-6">
+    <ProductMainContainer class="flex flex-col w-4xl place-self-center gap-y-6">
         <!-- Highlights Carousel -->
         <div class="flex flex-col w-full gap-y-2">
             <h1 class="w-full text-2xl">HIGHLIGHTS</h1>
-            <div class="relative w-full h-[400px] bg-tertiary rounded-2xl overflow-hidden shadow-2xl group">
+            <div class="relative w-full h-100 bg-tertiary rounded-2xl overflow-hidden shadow-2xl group">
                 <img
                     :src="banners[currentBannerIndex]"
                     alt="Highlight banner"
@@ -112,11 +112,11 @@ const closeWelcome = () => {
 
         <div class="flex flex-col items-center gap-y-2 my-4 text-center">
             <RouterLink :to="{ name: 'search-result-view' }" class="text-xl">
-                EXPLORE MORE GAMES &rarr;
+                EXPLORE MORE
             </RouterLink>
             <p class="text-white/60 text-sm">
                 Or get started:
-                <RouterLink :to="{ name: 'identification-view' }" class="text-action">Sign In</RouterLink> or
+                <RouterLink :to="{ name: 'login-view' }" class="text-action">Sign In</RouterLink> or
                 <RouterLink :to="{ name: 'register-view' }" class="text-action">Register</RouterLink>
             </p>
         </div>

@@ -67,8 +67,8 @@ const handleSuccessDone = () => {
 </script>
 
 <template>
-    <ProductMainContainer class="w-4xl place-self-center">
-        <h1 class="w-full">Shopping Cart</h1>
+    <ProductMainContainer class="w-2xl place-self-center">
+        <h1 class="w-full">Carts</h1>
         <div class="grid grid-cols-4 w-full gap-x-5">
             <div v-if="carts?.length" class="w-full flex flex-col col-span-3 gap-y-2.5">
                 <ProductListCard @delete-item="handleDelete" v-for="cart in carts" :product="cart" :key="cart.game.id"/>

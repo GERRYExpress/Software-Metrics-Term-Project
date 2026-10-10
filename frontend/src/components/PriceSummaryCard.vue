@@ -30,9 +30,9 @@ const total = computed(() => {
     <AppCard class="items-start justify-start place-self-start w-auto! min-w-64 h-min gap-y-3">
         <h3 class="font-bold border-b border-white/20 pb-2 w-full">Order Summary</h3>
         <div v-if="games && games.length > 0" class="flex flex-col gap-y-1.5 w-full max-h-48 overflow-y-auto text-sm">
-            <div v-for="game in games" :key="game.id" class="flex flex-row justify-between w-full gap-x-2">
-                <p class="truncate">{{ game.name }}</p>
-                <p class="font-semibold">${{ Number(game.price).toFixed(2) }}</p>
+            <div v-for="game in games" :key="game.id" class="flex flex-row justify-between gap-x-2">
+                <p class="truncate w-32">{{ game.name }}</p>
+                <p class="font-semibold w-fit">${{ Number(game.price).toFixed(2) }}</p>
             </div>
         </div>
         <div class="border-t border-white/20 pt-2 w-full flex flex-col gap-y-1 text-sm">
