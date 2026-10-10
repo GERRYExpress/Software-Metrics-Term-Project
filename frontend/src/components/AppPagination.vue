@@ -100,7 +100,9 @@ const handleJump = () => {
 
             <form @submit.prevent="handleJump" class="flex flex-row items-center gap-x-2">
                 <span>Go to page:</span>
+                <label for="jump-page-input" class="sr-only">Jump to page</label>
                 <input
+                    id="jump-page-input"
                     v-model.number="jumpPage"
                     type="number"
                     min="1"

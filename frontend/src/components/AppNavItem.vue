@@ -2,8 +2,8 @@
 import { Heart, Home, ShoppingCart, UserRound } from '@lucide/vue';
 
 interface NavItemProps {
-    name: string
-    routeName: string
+    name?: string
+    routeName?: string
     count?: number
 }
 

@@ -23,7 +23,7 @@ const selectedCategory = computed(() => {
 
 const currentPage = computed(() => {
     const p = Number(route.query.page)
-    return isNaN(p) || p < 1 ? 1 : p
+    return Number.isNaN(p) || p < 1 ? 1 : p
 })
 
 const filteredGames = computed(() => {
