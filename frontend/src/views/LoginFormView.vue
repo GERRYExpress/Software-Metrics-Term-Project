@@ -7,13 +7,14 @@ import BaseToggle from '@/components/BaseToggle.vue';
 import type { LoginForm } from '@/types';
 import { UserRound } from '@lucide/vue';
 import { ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 const router = useRouter()
+const route = useRoute()
 const loginOptions = ['Buyer', 'Seller']
 const credential = ref<LoginForm>({
     username: '',
     password: '',
-    isSeller: false
+    isSeller: route.query.role === 'true'
 })
 
 const toggleRole = () => {
@@ -27,7 +28,7 @@ const handleLogin = () => {
     /* Login query */
     
     router.push({
-        name: 'landing-page-view'
+        name: credential.value.isSeller ? 'seller-dashboard-view' : 'landing-page-view'
     })
 }
 
@@ -43,8 +44,8 @@ const handleLogin = () => {
             </RouterLink>
             <UserRound class="size-16"/>
             <form @submit.prevent="handleLogin" class="flex flex-col w-full gap-y-1.5">
-                <BaseInput label="Username:" v-model="credential.username"/>
-                <BaseInput label="Password:" v-model="credential.password"/>
+                <BaseInput label="Username:" v-model="credential.username" placeholder="Username"/>
+                <BaseInput label="Password:" type="password" v-model="credential.password" placeholder="Password"/>
                 <span class="w-full text-center">
                     No account? <RouterLink :to="{name: 'register-view'}">Sign up here</RouterLink>
                 </span>
