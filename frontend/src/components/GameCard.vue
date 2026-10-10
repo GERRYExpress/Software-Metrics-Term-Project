@@ -28,7 +28,7 @@ const handleWishlist = () => {
 </script>
 
 <template>
-    <RouterLink :to="{ name: 'game-detail-view', params: { id: game.id } }" class="w-auto w-max-72 rounded-xl bg-tertiary flex flex-col relative no-underline! transition-all hover:scale-102 hover:shadow-xl">
+    <RouterLink :to="{ name: 'game-detail-view', params: { id: game.id } }" class="w-full w-max-72 rounded-xl bg-tertiary flex flex-col relative no-underline! transition-all hover:scale-102 hover:shadow-xl">
         <Image
             layout="constrained"
             loading="lazy"
@@ -53,7 +53,7 @@ const handleWishlist = () => {
                     :class="inWishlist ? 'border-red-500! bg-red-950/40! shadow-red-500/20' : ''"
                     :title="inWishlist ? 'Remove from wishlist' : 'Add to wishlist'">
                     <Heart
-                        class="size-4 transition-all"
+                        class="size-5 transition-all"
                         :class="inWishlist ? 'fill-red-500 text-red-500 scale-110' : 'text-white'"
                     />
                 </BaseButton>
@@ -69,7 +69,7 @@ const handleWishlist = () => {
                         <Check class="size-4 text-action stroke-3"/>
                         In Cart
                     </span>
-                    <ShoppingCartPlus v-else class="size-4"/>
+                    <ShoppingCartPlus v-else class="size-5"/>
                 </BaseButton>
             </div>
         </div>
