@@ -12,16 +12,57 @@ type GameRepository struct {
 	Model model.Game
 }
 
-func (r *GameRepository) GetGames() ([]model.Game, error) {
+func (r *GameRepository) GetGamesCount(keyword, category string) (int, error) {
+	queryBuilder := squirrel.
+		Select("COUNT(*)").
+		From("products").
+		PlaceholderFormat(squirrel.Question)
+	if keyword != "" {
+		queryBuilder = queryBuilder.Where(squirrel.Like{"name": "%" + keyword + "%"})
+	}
+	if category != "" {
+		queryBuilder = queryBuilder.Where(squirrel.Expr(
+			"EXISTS (SELECT 1 FROM product_categories pc JOIN categories c ON c.category_id = pc.category_id WHERE pc.product_id = products.product_id AND c.name = ?)",
+			category,
+		))
+	}
+
+	query, args, err := queryBuilder.ToSql()
+	if err != nil {
+		return 0, err
+	}
+
+	var count int
+	if err := config.DB.QueryRow(query, args...).Scan(&count); err != nil {
+		return 0, err
+	}
+	return count, nil
+}
+
+func (r *GameRepository) GetGames(category string, limit, page int) ([]model.Game, error) {
+	productPage := squirrel.
+		Select("product_id", "name", "description", "price", "poster_url").
+		From("products").
+		OrderBy("product_id").
+		Limit(uint64(limit)).
+		Offset(uint64((page - 1) * limit))
+	if category != "" {
+		productPage = productPage.Where(squirrel.Expr(
+			"EXISTS (SELECT 1 FROM product_categories pc JOIN categories c ON c.category_id = pc.category_id WHERE pc.product_id = products.product_id AND c.name = ?)",
+			category,
+		))
+	}
+
 	query, args, err := squirrel.
 		Select(
 			"p.product_id", "p.name", "p.description", "p.price", "p.poster_url",
 			"c.category_id", "c.name", "c.is_hidden",
 		).
-		From("products p").
+		FromSelect(productPage, "p").
 		LeftJoin("product_categories pc ON pc.product_id = p.product_id").
 		LeftJoin("categories c ON c.category_id = pc.category_id").
 		OrderBy("p.product_id", "c.category_id").
+		PlaceholderFormat(squirrel.Question).
 		ToSql()
 	if err != nil {
 		return nil, err
@@ -80,19 +121,32 @@ func (r *GameRepository) GetGames() ([]model.Game, error) {
 	return games, nil
 }
 
-func (r *GameRepository) GetGamesByName(keyword string) ([]model.Game, error) {
+func (r *GameRepository) GetGamesByName(keyword, category string, limit, page int) ([]model.Game, error) {
 	searchPattern := "%" + keyword + "%"
-	mysqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Question)
-	query, args, err := mysqlBuilder.
+	productPage := squirrel.
+		Select("product_id", "name", "description", "price", "poster_url").
+		From("products").
+		Where(squirrel.Like{"name": searchPattern}).
+		OrderBy("product_id").
+		Limit(uint64(limit)).
+		Offset(uint64((page - 1) * limit))
+	if category != "" {
+		productPage = productPage.Where(squirrel.Expr(
+			"EXISTS (SELECT 1 FROM product_categories pc JOIN categories c ON c.category_id = pc.category_id WHERE pc.product_id = products.product_id AND c.name = ?)",
+			category,
+		))
+	}
+
+	query, args, err := squirrel.
 		Select(
 			"p.product_id", "p.name", "p.description", "p.price", "p.poster_url",
 			"c.category_id", "c.name", "c.is_hidden",
 		).
-		From("products p").
+		FromSelect(productPage, "p").
 		LeftJoin("product_categories pc ON pc.product_id = p.product_id").
 		LeftJoin("categories c ON c.category_id = pc.category_id").
 		OrderBy("p.product_id", "c.category_id").
-		Where(squirrel.Like{"p.name": searchPattern}).
+		PlaceholderFormat(squirrel.Question).
 		ToSql()
 
 	if err != nil {
