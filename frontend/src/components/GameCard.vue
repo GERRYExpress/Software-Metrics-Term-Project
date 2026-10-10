@@ -10,10 +10,10 @@ defineProps<{
 
 
 <template>
-    <RouterLink :to="{ name: 'game-detail-view', params: { id: game.id } }" class="w-auto w-max-72 rounded-xl bg-tertiary flex flex-col relative">
+    <RouterLink :to="{ name: 'game-detail-view', params: { id: game.id } }" class="w-auto w-max-72 rounded-xl bg-tertiary flex flex-col relative no-underline!">
         <Image layout="constrained" class="w-full h-48 rounded-t-xl pointer-events-none object-cover object-top" :src="game.posterUrl" alt=""/>
-        <div class="bg-tertiary w-24 px-2 text-center truncate line-clamp-1 absolute place-self-end font-normal rounded-bl-xl rounded-tr-xl">
-            {{ game.categories.at(0) ?? 'CATEGORY' }}
+        <div class="bg-tertiary w-32 px-2 text-center text-sm truncate line-clamp-1 absolute place-self-end font-normal rounded-bl-xl rounded-tr-xl">
+            {{ game.categories.map(category => category.name).join(', ') ?? 'CATEGORY' }}
         </div>
         <div class="p-2 w-full h-full flex flex-col gap-y-2">
             <p class="line-clamp-2 h-full">{{ game.name ?? 'NAME' }}</p>
