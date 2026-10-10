@@ -1,117 +1,67 @@
 <script setup lang="ts">
-import AppPagination from '@/components/AppPagination.vue';
 import GameCard from '@/components/GameCard.vue';
 import ProductMainContainer from '@/components/ProductMainContainer.vue';
+import BaseInput from '@/components/BaseInput.vue';
 import GameService from '@/service/GameService';
 import type { Game } from '@/types';
-import { computed, onMounted, ref, watch } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
-
+import { computed, onMounted, ref, watchEffect } from 'vue';
+import { useRoute } from 'vue-router';
 const route = useRoute()
-const router = useRouter()
-const allGames = ref<Game[]>([])
-const isLoading = ref(false)
-const perPage = 8
-
+const games = ref<Game[] | null>(null)
 const keyword = computed(() => {
     return typeof route.query.keyword === 'string' ? route.query.keyword : ''
 })
-
-const selectedCategory = computed(() => {
-    return typeof route.query.category === 'string' ? route.query.category : ''
-})
-
-const currentPage = computed(() => {
-    const p = Number(route.query.page)
-    return isNaN(p) || p < 1 ? 1 : p
-})
-
-const filteredGames = computed(() => {
-    if (!selectedCategory.value) return allGames.value
-    return allGames.value.filter(g =>
-        g.categories?.some(c => c.name.toLowerCase() === selectedCategory.value.toLowerCase())
-    )
-})
-
-const totalPages = computed(() => {
-    return Math.max(1, Math.ceil(filteredGames.value.length / perPage))
-})
-
-const paginatedGames = computed(() => {
-    const start = (currentPage.value - 1) * perPage
-    return filteredGames.value.slice(start, start + perPage)
-})
-
-const fetchGames = () => {
-    isLoading.value = true
-    const query = keyword.value ? GameService.getGamesByKeyword(keyword.value) : GameService.getGames()
-    query
-        .then(res => {
-            allGames.value = res.data || []
-        })
-        .catch(err => {
-            console.error('Failed to fetch search games:', err)
-            allGames.value = []
-        })
-        .finally(() => {
-            isLoading.value = false
-        })
-}
-
+const props = defineProps<{
+    page: number,
+    category: string
+}>()
 onMounted(() => {
-    fetchGames()
-})
-
-watch(() => [route.query.keyword, route.query.category], () => {
-    fetchGames()
-})
-
-const handlePageChange = (newPage: number) => {
-    router.push({
-        query: {
-            ...route.query,
-            page: newPage
-        }
+    games.value = null
+    watchEffect(() => {
+        updateKeyword()
     })
-}
+})
 
-const clearFilters = () => {
-    router.push({ name: 'search-result-view' })
+const category = computed(() => props.category)
+const page = computed(() => props.page)
+const totalPages = ref<number>(0)
+const hasNextPage = computed(() => {
+    return page.value < Math.ceil(totalPages.value / 12)
+})
+const updateKeyword = () => {
+    let queryFunction
+    if (keyword.value === '' && category.value === '') {
+        queryFunction = GameService.getGames(12, page.value)
+    } else if (keyword.value !== '' && category.value === '') {
+        queryFunction = GameService.getGamesByKeyword(12, page.value, keyword.value)
+    } else if (keyword.value === '' && category.value !== '') {
+        queryFunction = GameService.getGamesByCategory(12, page.value, category.value)
+    } else {
+        queryFunction = GameService.getGamesByKeywordAndCategory(12, page.value,keyword.value, category.value)
+    }
+    queryFunction.then(res => {
+        games.value = res.data
+        totalPages.value = res.headers['x-total-count']
+    })
 }
 </script>
 
+
 <template>
-    <ProductMainContainer class="flex flex-col w-5xl place-self-center">
-        <div class="flex flex-row justify-between items-center w-full">
-            <h1 class="text-3xl">
-                {{ keyword || selectedCategory ? `Results: ${[keyword ? `"${keyword}"` : '', selectedCategory ? `[${selectedCategory}]` : ''].filter(Boolean).join(' ')}` : 'All Games' }}
-            </h1>
-            <button
-                v-if="keyword || selectedCategory"
-                @click="clearFilters"
-                type="button"
-                class="text-xs bg-tertiary hover:bg-secondary text-action px-3 py-1.5 rounded-lg border border-action/30 transition-all cursor-pointer">
-                Clear filters
-            </button>
+    <ProductMainContainer class="flex flex-col w-4xl place-self-center relative">
+        <h1 class="w-full line-clamp-1 truncate">Search Results: {{ $route.query.keyword }}</h1>
+        <RouterLink class="absolute right-0 top-2.5" :to="{ name: 'search-result-view' }">Reset Filter</RouterLink>
+        <div v-if="games?.length" class="grid grid-cols-4 gap-5 w-auto">
+            <GameCard v-for="game in games" :key="game.id" :game/>
         </div>
-
-        <div v-if="paginatedGames.length > 0" class="grid grid-cols-4 gap-5 w-full my-4">
-            <GameCard v-for="game in paginatedGames" :key="game.id" :game="game"/>
+        <div v-else class="flex flex-col items-center p-5 w-full justify-center opacity-75 bg-tertiary rounded-xl">
+            <h2>Congratulation! You found nothing.</h2>
+            <h3><RouterLink :to="{ name: 'search-result-view' }">Reset Filter</RouterLink></h3>
         </div>
-
-        <div v-else-if="!isLoading" class="flex flex-col items-center justify-center py-16 bg-tertiary rounded-xl w-full text-center">
-            <h2 class="text-xl">No games found</h2>
-            <p class="text-white/60 text-sm mt-1">Try searching with a different title or clearing category filters</p>
+        <div v-if="games?.length" class="w-full text-xl justify-center flex flex-row items-center gap-x-3">
+            <RouterLink class="rounded-full bg-tertiary p-2.5 no-underline!" :class="{ 'pointer-events-none opacity-20': page <= 1 }" :to="{ query: { ...route.query, page: page - 1}}">Prev</RouterLink>
+            <BaseInput disabled class="w-16! m-0! text-center" v-model="page"/>
+            <RouterLink class="rounded-full bg-tertiary p-2.5 no-underline!" :class="{ 'pointer-events-none opacity-20': !hasNextPage}" :to="{ query: { ...route.query,  page: page + 1 }}">Next</RouterLink>
         </div>
-
-        <!-- Pagination Component -->
-        <AppPagination
-            v-if="filteredGames.length > perPage"
-            :current-page="currentPage"
-            :total-pages="totalPages"
-            :total-items="filteredGames.length"
-            :item-count="paginatedGames.length"
-            @change-page="handlePageChange"
-        />
     </ProductMainContainer>
 </template>
