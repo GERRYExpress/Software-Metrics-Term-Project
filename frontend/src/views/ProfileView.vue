@@ -3,6 +3,7 @@ import AppCard from '@/components/AppCard.vue';
 import BaseButton from '@/components/BaseButton.vue';
 import ProductMainContainer from '@/components/ProductMainContainer.vue';
 import AccountService from '@/service/AccountService';
+import { useUserActionStore } from '@/stores/userAction';
 import type { Account } from '@/types';
 import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
@@ -37,7 +38,10 @@ const formattedCreatedDate = computed(() => {
     })
 })
 
+const userActionStore = useUserActionStore()
+
 const handleLogout = () => {
+    userActionStore.notify('Logged out successfully', 'info')
     router.push({ name: 'login-view' })
 }
 
@@ -45,11 +49,11 @@ const confirmDeleteAccount = () => {
     if (account.value) {
         AccountService.deleteAccount(account.value.id)
             .then(() => {
-                alert('Account deleted successfully.')
+                userActionStore.notify('Account deleted successfully.', 'info')
                 router.push({ name: 'login-view' })
             })
             .catch(() => {
-                alert('Account removed.')
+                userActionStore.notify('Account removed.', 'info')
                 router.push({ name: 'login-view' })
             })
     }

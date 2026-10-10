@@ -5,6 +5,7 @@ import PriceSummaryCard from '@/components/PriceSummaryCard.vue';
 import ProductListCard from '@/components/ProductListCard.vue';
 import ProductMainContainer from '@/components/ProductMainContainer.vue';
 import CartService from '@/service/CartService';
+import { useUserActionStore } from '@/stores/userAction';
 import type { Cart } from '@/types';
 import { computed, onMounted, ref, watchEffect } from 'vue';
 import { useRouter } from 'vue-router';
@@ -32,12 +33,16 @@ onMounted(() => {
     })
 })
 
+const userActionStore = useUserActionStore()
+
 const handleDelete = (userId: number, gameId: number) => {
     CartService.deleteCart(userId, gameId)
         .then(() => {
             if (carts.value) {
                 carts.value = carts.value.filter(c => c.productId !== gameId)
             }
+            userActionStore.cartIds = userActionStore.cartIds.filter(id => id !== gameId)
+            userActionStore.notify('Removed item from cart', 'info')
         })
         .catch(err => console.error('Failed to delete cart item:', err))
 }
