@@ -1,15 +1,13 @@
-import axios from "axios";
-
-const apiClient = axios.create({
-    baseURL: import.meta.env.VITE_BACKEND_URL,
-    headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json'
-    }
-})
+import apiClient from "./AxiosClient"
 
 export default {
     getGames() {
-        return apiClient.get('/games?_limit=' + 10 + '&_page=' + 1)
+        return apiClient.get('/api/v1/games?_limit=' + 10 + '&_page=' + 1)
+    },
+    getGamesByKeyword(keyword: string) {
+        return apiClient.get('/api/v1/games?keyword=' + keyword + '&_limit=' + 10 + '&_page=' + 1)
+    },
+    getGame(id: number) {
+        return apiClient.get('/api/v1/games/' + id)
     }
 }

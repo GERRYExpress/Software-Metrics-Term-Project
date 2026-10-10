@@ -1,8 +1,12 @@
+import GameService from '@/service/GameService'
+import WishlistService from '@/service/WishlistService'
+import { useGameStore } from '@/stores/game'
 import BuyerLayoutView from '@/views/BuyerLayoutView.vue'
 import CartView from '@/views/CartView.vue'
 import ContactView from '@/views/ContactView.vue'
 import LandingView from '@/views/LandingView.vue'
 import LoginFormView from '@/views/LoginFormView.vue'
+import ProductDetailView from '@/views/ProductDetailView.vue'
 import ProfileView from '@/views/ProfileView.vue'
 import RegisterFormView from '@/views/RegisterFormView.vue'
 import SearchResultView from '@/views/SearchResultView.vue'
@@ -17,11 +21,13 @@ const router = createRouter({
       path: '/login ',
       name: 'login-view',
       component: LoginFormView,
+      meta: { title: 'Login' }
     },
     {
       path: '/register',
       name: 'register-view',
-      component: RegisterFormView
+      component: RegisterFormView,
+      meta: { title: 'Register' }
     },
     {
       path: '',
@@ -31,40 +37,63 @@ const router = createRouter({
         {
           path: '',
           name: 'landing-page-view',
-          component: LandingView
+          component: LandingView,
+          meta: { title: 'Home' }
         },
         {
           path: '/search',
           name: 'search-result-view',
           component: SearchResultView,
+          meta: { title: 'Search' },
           props: true
         },
         {
           path: '/profile',
           name: 'profile-view',
-          component: ProfileView
+          component: ProfileView,
+          meta: { title: 'Profile' }
         },
         {
-          path: '/cart',
+          path: '/carts',
           name: 'cart-view',
-          component: CartView
+          component: CartView,
+          meta: { title: 'Carts' }
         },
         {
           path: '/wishlists',
           name: 'wishlist-view',
-          component: WishlistView
+          component: WishlistView,
+          meta: { title: 'Wishlists' }
         },
         {
           path: '/contacts',
           name: 'contact-view',
-          component: ContactView
+          component: ContactView,
+          meta: { title: 'Contacts' }
+        },
+        {
+          path: '/games/:id',
+          name: 'game-detail-view',
+          component: ProductDetailView,
+          beforeEnter: (route) => {
+            const gameStore = useGameStore()
+            GameService.getGame(Number(route.params.id))
+              .then(res => {
+                gameStore.save(res.data)
+              })
+              .catch(() => {
+              })
+          },
+          props: true
         }
       ]
     }
   ],
 })
 
-router.beforeEach(() => {
+router.beforeEach(to => {
+  const defaultTitle = 'KD5F'
+  document.title = to.meta.title ? `KD5F - ${to.meta.title}` : defaultTitle
   nProgress.start()
 })
 
