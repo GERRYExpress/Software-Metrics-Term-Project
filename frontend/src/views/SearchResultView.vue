@@ -3,24 +3,34 @@ import GameCard from '@/components/GameCard.vue';
 import ProductMainContainer from '@/components/ProductMainContainer.vue';
 import GameService from '@/service/GameService';
 import type { Game } from '@/types';
-import { onMounted, ref, watchEffect } from 'vue';
+import { computed, onMounted, ref, watchEffect } from 'vue';
 import { useRoute } from 'vue-router';
 const route = useRoute()
 const games = ref<Game[] | null>(null)
+const keyword = computed(() => {
+    return typeof route.query.keyword === 'string' ? route.query.keyword : ''
+})
 defineProps<{
     page: number
 }>()
 onMounted(() => {
+    games.value = null
     watchEffect(() => {
-        /* If not searched or filter */
-        if (route.query.keyword === '' && route.query.category === 'all') {
-            GameService.getGames()
-                .then(res => {
-                    games.value = res.data
-                })
-        }
+        updateKeyword()
     })
 })
+
+const updateKeyword = () => {
+    let queryFunction
+    if (keyword.value === '') {
+        queryFunction = GameService.getGames()
+    } else {
+        queryFunction = GameService.getGamesByKeyword(keyword.value)
+    }
+    queryFunction.then(res => {
+        games.value = res.data
+    })
+}
 </script>
 
 

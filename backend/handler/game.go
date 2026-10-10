@@ -2,6 +2,7 @@ package handler
 
 import (
 	"net/http"
+	"software-metrics-project/model"
 	"software-metrics-project/service"
 	"strconv"
 
@@ -13,7 +14,15 @@ type GameHandler struct {
 }
 
 func (h *GameHandler) GetGames(c *gin.Context) {
-	games, err := h.Service.GetGames()
+	var (
+		games []model.Game
+		err   error
+	)
+	if keyword := c.Query("keyword"); keyword != "" {
+		games, err = h.Service.GetGamesByName(keyword)
+	} else {
+		games, err = h.Service.GetGames()
+	}
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
