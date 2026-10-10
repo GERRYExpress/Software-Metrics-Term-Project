@@ -4,6 +4,7 @@ import BaseButton from '@/components/BaseButton.vue';
 import MediaCarousel from '@/components/MediaCarousel.vue';
 import ProductMainContainer from '@/components/ProductMainContainer.vue';
 import SystemRequirement from '@/components/SystemRequirement.vue';
+import WishlistService from '@/service/WishlistService';
 import { useGameStore } from '@/stores/game';
 import { Heart } from '@lucide/vue';
 import { Image } from '@unpic/vue';
@@ -23,6 +24,11 @@ const formattedDate = computed(() => {
         return date.getDate() + '/' + date.getMonth() + '/' + date.getFullYear()
     }
 })
+
+const handleWishlist = (userId: number, gameId: number) => {
+    WishlistService.addWishlist(userId, gameId)
+        .then(res => alert('wishlisted: '+ res.data))
+}
 </script>
 
 
@@ -38,7 +44,7 @@ const formattedDate = computed(() => {
                 <h2 class="mt-auto text-end">${{ price.toFixed(2) }}</h2>
                 <div class="flex gap-x-2.5">
                     <BaseButton class="w-2/3">Add to Cart</BaseButton>
-                    <BaseButton type="neutral" class="w-1/3!"><Heart/></BaseButton>
+                    <BaseButton @click.prevent="handleWishlist" type="neutral" class="w-1/3!"><Heart/></BaseButton>
                 </div>
             </div>
         </AppCard>

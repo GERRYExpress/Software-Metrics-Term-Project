@@ -70,3 +70,17 @@ export interface Media {
     id: number
     mediaUrl: string
 }
+
+export interface Wishlist {
+    userId: number
+    productId: number
+    wishlistedDate: Date
+    game: Game
+}
+
+export interface Cart {
+    userId: number
+    productId: number
+    cartDate: Date
+    game: Game
+}
