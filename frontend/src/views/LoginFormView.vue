@@ -39,13 +39,13 @@ const handleLogin = () => {
     <AuthMainContainer>
         <h1>Welcome Back!</h1>
         <AppCard class="w-100">
-            <RouterLink class=" place-self-start" :to="{ path: '' }">
+            <RouterLink class=" place-self-start" :to="{ name: 'landing-page-view' }">
                 Back to Home
             </RouterLink>
             <UserRound class="size-16"/>
             <form @submit.prevent="handleLogin" class="flex flex-col w-full gap-y-1.5">
-                <BaseInput label="Username:" v-model="credential.username" placeholder="Username"/>
-                <BaseInput label="Password:" type="password" v-model="credential.password" placeholder="Password"/>
+                <BaseInput label="Username" v-model="credential.username" placeholder="Username"/>
+                <BaseInput label="Password" type="password" v-model="credential.password" placeholder="Password"/>
                 <span class="w-full text-center">
                     No account? <RouterLink :to="{name: 'register-view'}">Sign up here</RouterLink>
                 </span>

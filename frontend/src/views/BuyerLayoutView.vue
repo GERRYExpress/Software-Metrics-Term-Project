@@ -36,7 +36,6 @@ const handleSessionExpiredConfirm = () => {
             :show="isSessionExpired"
             @confirm="handleSessionExpiredConfirm"
         />
-
         <NotificationToast/>
     </div>
 </template>

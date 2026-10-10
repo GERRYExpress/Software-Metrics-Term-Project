@@ -44,13 +44,17 @@ const updateKeyword = () => {
 <template>
     <ProductMainContainer class="flex flex-col w-4xl place-self-center">
         <h1 class="w-full">Search Results: {{ $route.query.keyword }}</h1>
-        <div class="grid grid-cols-4 gap-5 w-auto">
+        <div v-if="games?.length" class="grid grid-cols-4 gap-5 w-auto">
             <GameCard v-for="game in games" :key="game.id" :game/>
         </div>
-        <div class="w-full text-xl flex flex-row items-center gap-x-3">
-            <RouterLink v-if="page > 1" :to="{ query: { ...route.query, page: page - 1}}">Prev</RouterLink>
+        <div v-else class="flex flex-col items-center p-5 w-full justify-center opacity-75 bg-tertiary rounded-xl">
+            <h2>Congratulation! You found nothing.</h2>
+            <h3><RouterLink :to="{ name: 'search-result-view' }">Reset Filter</RouterLink></h3>
+        </div>
+        <div v-if="games?.length" class="w-full text-xl justify-center flex flex-row items-center gap-x-3">
+            <RouterLink class="rounded-full bg-tertiary p-2.5 no-underline!" :class="{ 'pointer-events-none opacity-20': page <= 1 }" :to="{ query: { ...route.query, page: page - 1}}">Prev</RouterLink>
             <BaseInput disabled class="w-16! m-0! text-center" v-model="page"/>
-            <RouterLink v-if="hasNextPage" :to="{ query: { ...route.query,  page: page + 1 }}">Next</RouterLink>
+            <RouterLink class="rounded-full bg-tertiary p-2.5 no-underline!" :class="{ 'pointer-events-none opacity-20': !hasNextPage}" :to="{ query: { ...route.query,  page: page + 1 }}">Next</RouterLink>
         </div>
     </ProductMainContainer>
 </template>

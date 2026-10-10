@@ -49,7 +49,7 @@ const handleWishlist = () => {
                 <BaseButton
                     @click.prevent.stop="handleWishlist"
                     type="neutral"
-                    class="w-1/2! py-2! transition-all cursor-pointer"
+                    class="transition-all cursor-pointer"
                     :class="inWishlist ? 'border-red-500! bg-red-950/40! shadow-red-500/20' : ''"
                     :title="inWishlist ? 'Remove from wishlist' : 'Add to wishlist'">
                     <Heart
@@ -62,11 +62,11 @@ const handleWishlist = () => {
                 <BaseButton
                     @click.prevent.stop="handleAddToCart"
                     :type="inCart ? 'neutral' : 'action'"
-                    class="w-1/2! py-2! transition-all cursor-pointer font-bold"
+                    class="transition-all cursor-pointer font-bold"
                     :class="inCart ? 'border-action! bg-tertiary! text-action!' : ''"
                     :title="inCart ? 'Already in cart' : 'Add to cart'">
                     <span v-if="inCart" class="flex items-center gap-x-1 text-xs">
-                        <Check class="size-4 text-action stroke-[3]"/>
+                        <Check class="size-4 text-action stroke-3"/>
                         In Cart
                     </span>
                     <ShoppingCartPlus v-else class="size-4"/>
