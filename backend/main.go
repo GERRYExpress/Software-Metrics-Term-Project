@@ -45,6 +45,9 @@ func main() {
 
 			carts := v1.Group("/carts")
 			CreateCartEndpoint(carts)
+
+			orders := v1.Group("orders")
+			CreateOrderEndpoint(orders)
 		}
 	}
 	r.Run(":8080")
@@ -70,6 +73,7 @@ func CreateCategoryEndpoint(r *gin.RouterGroup) {
 	service := &service.CategoryService{Repo: repo}
 	handler := &handler.CategoryHandler{Service: service}
 	r.GET("", handler.GetCategories)
+	r.POST("", handler.Create)
 }
 
 func CreateWishlistEndpoint(r *gin.RouterGroup) {
@@ -90,4 +94,11 @@ func CreateCartEndpoint(r *gin.RouterGroup) {
 	r.GET("/:userID", handler.GetCarts)
 	r.POST(operationPath, handler.AddCart)
 	r.DELETE(operationPath, handler.DeleteCart)
+}
+
+func CreateOrderEndpoint(r *gin.RouterGroup) {
+	repo := &repository.OrderRepository{}
+	service := &service.OrderService{Repo: repo}
+	handler := &handler.OrderHandler{Service: service}
+	r.POST("", handler.Create)
 }
