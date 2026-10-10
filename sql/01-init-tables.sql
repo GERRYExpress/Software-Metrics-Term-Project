@@ -20,6 +20,7 @@ CREATE TABLE products (
 	product_id INT NOT NULL UNIQUE AUTO_INCREMENT,
     name VARCHAR(50) NOT NULL UNIQUE,
     description VARCHAR(1024) NOT NULL,
+    release_Date DATE NOT NULL DEFAULT now(),
     price DECIMAL(10, 2) NOT NULL,
     poster_url VARCHAR(255) NOT NULL,
     user_id INT NOT NULL,
@@ -51,18 +52,11 @@ CREATE TABLE hardware_requirement (
     FOREIGN KEY (product_id) REFERENCES products(product_id) ON DELETE CASCADE
 );
 
-CREATE TABLE images (
-	image_id INT NOT NULL UNIQUE AUTO_INCREMENT,
-    image_url VARCHAR(255),
+CREATE TABLE media (
+	media_id INT NOT NULL UNIQUE AUTO_INCREMENT,
+    media_url VARCHAR(255),
     product_id INT NOT NULL,
-    PRIMARY KEY (image_id),
-    FOREIGN KEY (product_id) REFERENCES products(product_id) ON DELETE CASCADE
-);
-CREATE TABLE videos (
-	video_id INT NOT NULL UNIQUE AUTO_INCREMENT,
-    video_url VARCHAR(255),
-    product_id INT NOT NULL,
-    PRIMARY KEY (video_id),
+    PRIMARY KEY (media_url),
     FOREIGN KEY (product_id) REFERENCES products(product_id) ON DELETE CASCADE
 );
 

@@ -299,3 +299,6 @@ INSERT INTO product_categories (product_id, category_id) VALUES
 (45, 1),  -- Dark Fantasy
 (45, 4),  -- Adventure
 (45, 15);  -- Fighting
+
+INSERT INTO wishlists (user_id, product_id, wishlist_date)
+VALUES (1, 1, CURDATE());
