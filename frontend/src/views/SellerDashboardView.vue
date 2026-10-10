@@ -194,6 +194,7 @@ function getErrorMessage(error: unknown, fallback: string) {
                         v-else
                         v-model:editing-id="editingCategoryId"
                         :categories="categories"
+                        :is-loading="isSavingCategory"
                         @save="saveCategory"
                         @toggle="toggleCategory"
                         @remove="deleteCategory"

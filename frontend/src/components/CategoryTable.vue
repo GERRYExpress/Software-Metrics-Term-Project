@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import type { Category } from '@/types'
 import { Edit3, Eye, EyeOff, Trash2 } from '@lucide/vue'
+import Loading from 'vue-loading-overlay'
+import BaseButton from '@/components/BaseButton.vue'
 import { ref } from 'vue'
 
 defineProps<{
     categories: Category[]
+    isLoading?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -29,7 +32,8 @@ function cancelEdit() {
 </script>
 
 <template>
-    <div class="overflow-x-auto rounded-xl border border-white/20 bg-tertiary/60 shadow-lg">
+    <div class="relative overflow-x-auto rounded-xl border border-white/20 bg-tertiary/60 shadow-lg">
+        <Loading :active="isLoading" :is-full-page="false" color="#B7EF00" />
         <table class="w-full min-w-[640px] text-left">
             <caption class="sr-only">Storefront categories and their visibility</caption>
             <thead class="bg-white/10 text-sm font-bold uppercase tracking-wider text-white">
@@ -73,20 +77,39 @@ function cancelEdit() {
                     <td class="px-4 py-4">
                         <div class="flex justify-end gap-2">
                             <template v-if="editingId === category.id">
-                                <button type="button" class="cursor-pointer rounded-lg bg-action px-4 py-2 text-sm font-bold text-tertiary hover:brightness-110" @click="emit('save', category, editingName)">Save</button>
-                                <button type="button" class="cursor-pointer rounded-lg bg-secondary px-4 py-2 text-sm text-white hover:brightness-125" @click="cancelEdit">Cancel</button>
+                                <BaseButton class="w-auto! px-4! py-2! text-sm" @click="emit('save', category, editingName)">
+                                    Save
+                                </BaseButton>
+                                <BaseButton type="neutral" class="w-auto! px-4! py-2! text-sm" @click="cancelEdit">
+                                    Cancel
+                                </BaseButton>
                             </template>
                             <template v-else>
-                                <button type="button" class="cursor-pointer rounded-lg bg-secondary p-2.5 text-white hover:brightness-125" :aria-label="`Edit ${category.name}`" :title="`Edit ${category.name}`" @click="beginEdit(category)">
+                                <BaseButton
+                                    type="neutral"
+                                    class="w-auto! p-2.5!"
+                                    :aria-label="`Edit ${category.name}`"
+                                    :title="`Edit ${category.name}`"
+                                    @click="beginEdit(category)">
                                     <Edit3 class="size-5"/>
-                                </button>
-                                <button type="button" class="cursor-pointer rounded-lg bg-secondary p-2.5 text-white hover:brightness-125" :aria-label="category.isHidden ? `Show ${category.name}` : `Hide ${category.name}`" :title="category.isHidden ? `Show ${category.name}` : `Hide ${category.name}`" @click="emit('toggle', category)">
+                                </BaseButton>
+                                <BaseButton
+                                    type="neutral"
+                                    class="w-auto! p-2.5!"
+                                    :aria-label="category.isHidden ? `Show ${category.name}` : `Hide ${category.name}`"
+                                    :title="category.isHidden ? `Show ${category.name}` : `Hide ${category.name}`"
+                                    @click="emit('toggle', category)">
                                     <EyeOff v-if="category.isHidden" class="size-5"/>
                                     <Eye v-else class="size-5"/>
-                                </button>
-                                <button type="button" class="cursor-pointer rounded-lg bg-red p-2.5 text-white hover:brightness-110" :aria-label="`Delete ${category.name}`" :title="`Delete ${category.name}`" @click="emit('remove', category)">
+                                </BaseButton>
+                                <BaseButton
+                                    type="danger"
+                                    class="w-auto! p-2.5!"
+                                    :aria-label="`Delete ${category.name}`"
+                                    :title="`Delete ${category.name}`"
+                                    @click="emit('remove', category)">
                                     <Trash2 class="size-5"/>
-                                </button>
+                                </BaseButton>
                             </template>
                         </div>
                     </td>
