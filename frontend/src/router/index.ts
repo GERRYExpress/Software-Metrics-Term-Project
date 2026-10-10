@@ -152,7 +152,7 @@ router.beforeEach(async to => {
   }
 
   const defaultTitle = 'KD5F'
-  document.title = to.meta.title ? `KD5F - ${to.meta.title}` : defaultTitle
+  document.title = to.meta.title ? `KD5F - ${String(to.meta.title)}` : defaultTitle
   nProgress.start()
 })
 

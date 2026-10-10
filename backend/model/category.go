@@ -1,7 +1,7 @@
 package model
 
 type Category struct {
-	ID       int    `json:"id"`
-	Name     string `json:"name"`
-	IsHidden bool   `json:"isHidden"`
+	ID       ID     `json:"id"`
+	Name     Name   `json:"name"`
+	IsHidden Hidden `json:"isHidden"`
 }

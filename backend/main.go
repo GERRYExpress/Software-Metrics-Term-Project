@@ -76,16 +76,18 @@ func CreateWishlistEndpoint(r *gin.RouterGroup) {
 	repo := &repository.WishlistRepository{}
 	service := &service.WishlistService{Repo: repo}
 	handler := &handler.WishlistHandler{Service: service}
+	operationPath := "/:userID/:gameID"
 	r.GET("/:userID", handler.GetWishlists)
-	r.POST("/:userID/:gameID", handler.AddWishlist)
-	r.DELETE("/:userID/:gameID", handler.DeleteWishlist)
+	r.POST(operationPath, handler.AddWishlist)
+	r.DELETE(operationPath, handler.DeleteWishlist)
 }
 
 func CreateCartEndpoint(r *gin.RouterGroup) {
 	repo := &repository.CartRepository{}
 	service := &service.CartService{Repo: repo}
 	handler := &handler.CartHandler{Service: service}
+	operationPath := "/:userID/:gameID"
 	r.GET("/:userID", handler.GetCarts)
-	r.POST("/:userID/:gameID", handler.AddCart)
-	r.DELETE("/:userID/:gameID", handler.DeleteCart)
+	r.POST(operationPath, handler.AddCart)
+	r.DELETE(operationPath, handler.DeleteCart)
 }

@@ -1,10 +1,8 @@
 package model
 
-import "time"
-
 type Wishlist struct {
-	UserID       int       `json:"userId"`
-	ProductID    int       `json:"productId"`
-	WishlistDate time.Time `json:"wishlistedDate"`
-	Game         Game      `json:"game"`
+	UserID       ID   `json:"userId"`
+	ProductID    ID   `json:"productId"`
+	WishlistDate Date `json:"wishlistedDate"`
+	Game         Game `json:"game"`
 }

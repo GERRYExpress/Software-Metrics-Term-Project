@@ -16,12 +16,12 @@ type WishlistRepository struct {
 func (r *WishlistRepository) GetWishlists(userId int) ([]model.Wishlist, error) {
 	mysqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Question)
 	query, args, err := mysqlBuilder.
-		Select("w.user_id", "w.product_id", "w.wishlist_date", "p.name", "p.price", "p.poster_url", "c.category_id", "c.name").
+		Select(wishlistUserIDColumn, wishlistProductIDColumn, wishlistDateColumn, "p.name", "p.price", "p.poster_url", "c.category_id", "c.name").
 		From("wishlists w").
 		LeftJoin("products p on w.product_id = p.product_id").
 		LeftJoin("product_categories pc ON p.product_id = pc.product_id").
 		LeftJoin("categories c ON c.category_id = pc.category_id AND c.is_hidden = false").
-		Where(squirrel.Eq{"w.user_id": userId}).
+		Where(squirrel.Eq{wishlistUserIDColumn: userId}).
 		ToSql()
 	if err != nil {
 		return nil, err
@@ -55,19 +55,13 @@ func (r *WishlistRepository) GetWishlists(userId int) ([]model.Wishlist, error) 
 		wishlistPosition, ok := wishlistIndex[productID]
 		if !ok {
 			wishlist := model.Wishlist{
-				UserID:       wishlistUserID,
-				ProductID:    productID,
-				WishlistDate: wishlistDate,
+				UserID:       model.NewID(wishlistUserID),
+				ProductID:    model.NewID(productID),
+				WishlistDate: model.NewDate(wishlistDate),
 				Game:         model.Game{},
 			}
 			if gameName != nil {
-				wishlist.Game = model.Game{
-					ID:         productID,
-					Name:       *gameName,
-					Price:      *gamePrice,
-					PosterUrl:  *posterUrl,
-					Categories: make([]model.Category, 0),
-				}
+				wishlist.Game = model.NewGame(productID, *gameName, "", *gamePrice, *posterUrl)
 			}
 			wishlists = append(wishlists, wishlist)
 			wishlistPosition = len(wishlists) - 1
@@ -75,10 +69,8 @@ func (r *WishlistRepository) GetWishlists(userId int) ([]model.Wishlist, error) 
 		}
 
 		if categoryID != nil {
-			wishlists[wishlistPosition].Game.Categories = append(wishlists[wishlistPosition].Game.Categories, model.Category{
-				ID:   *categoryID,
-				Name: *categoryName,
-			})
+			wishlists[wishlistPosition].Game.Categories = append(wishlists[wishlistPosition].Game.Categories,
+				model.NewCategory(*categoryID, *categoryName, false))
 		}
 	}
 	if err := rows.Err(); err != nil {
@@ -109,12 +101,12 @@ func (r *WishlistRepository) AddWishlist(userID, gameID int) (*model.Wishlist, e
 
 func (r *WishlistRepository) getWishlist(userID, gameID int) (*model.Wishlist, error) {
 	query, args, err := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Question).
-		Select("w.user_id", "w.product_id", "w.wishlist_date", "p.name", "p.price", "p.poster_url", "c.category_id", "c.name").
+		Select(wishlistUserIDColumn, wishlistProductIDColumn, wishlistDateColumn, "p.name", "p.price", "p.poster_url", "c.category_id", "c.name").
 		From("wishlists w").
 		Join("products p ON w.product_id = p.product_id").
 		LeftJoin("product_categories pc ON p.product_id = pc.product_id").
 		LeftJoin("categories c ON c.category_id = pc.category_id AND c.is_hidden = false").
-		Where(squirrel.Eq{"w.user_id": userID, "w.product_id": gameID}).
+		Where(squirrel.Eq{wishlistUserIDColumn: userID, wishlistProductIDColumn: gameID}).
 		ToSql()
 	if err != nil {
 		return nil, err
@@ -147,25 +139,17 @@ func (r *WishlistRepository) getWishlist(userID, gameID int) (*model.Wishlist, e
 
 		if !initialized {
 			output = model.Wishlist{
-				UserID:       wishlistUserID,
-				ProductID:    productID,
-				WishlistDate: wishlistDate,
-				Game: model.Game{
-					ID:         gameID,
-					Name:       gameName,
-					Price:      gamePrice,
-					PosterUrl:  posterURL,
-					Categories: make([]model.Category, 0),
-				},
+				UserID:       model.NewID(wishlistUserID),
+				ProductID:    model.NewID(productID),
+				WishlistDate: model.NewDate(wishlistDate),
+				Game:         model.NewGame(gameID, gameName, "", gamePrice, posterURL),
 			}
 			initialized = true
 		}
 
 		if categoryID != nil {
-			output.Game.Categories = append(output.Game.Categories, model.Category{
-				ID:   *categoryID,
-				Name: *categoryName,
-			})
+			output.Game.Categories = append(output.Game.Categories,
+				model.NewCategory(*categoryID, *categoryName, false))
 		}
 	}
 	if err := rows.Err(); err != nil {
@@ -186,7 +170,7 @@ func (r *WishlistRepository) DeleteWishlist(userID, gameID int) (*model.Wishlist
 
 	query, args, err := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Question).
 		Delete("wishlists").
-		Where(squirrel.Eq{"user_id": userID, "product_id": gameID}).
+		Where(squirrel.Eq{wishlistUserFilter: userID, wishlistProductFilter: gameID}).
 		ToSql()
 	if err != nil {
 		return nil, err

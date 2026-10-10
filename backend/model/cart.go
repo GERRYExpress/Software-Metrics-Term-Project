@@ -1,10 +1,8 @@
 package model
 
-import "time"
-
 type Cart struct {
-	UserID    int       `json:"userId"`
-	ProductID int       `json:"productId"`
-	CartDate  time.Time `json:"cartDate"`
-	Game      Game      `json:"game"`
+	UserID    ID   `json:"userId"`
+	ProductID ID   `json:"productId"`
+	CartDate  Date `json:"cartDate"`
+	Game      Game `json:"game"`
 }
