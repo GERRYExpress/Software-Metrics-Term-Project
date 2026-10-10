@@ -50,7 +50,8 @@ const router = createRouter({
           component: SearchResultView,
           meta: { title: 'Search' },
           props: (route) => ({
-            page: Number.parseInt(route.query.page ? route.query.page.toString() : '1')
+            page: Number.parseInt(route.query.page ? route.query.page.toString() : '1'),
+            category: route.query.category ? route.query.category : ''
           })
         },
         {

@@ -12,7 +12,8 @@ const keyword = computed(() => {
     return typeof route.query.keyword === 'string' ? route.query.keyword : ''
 })
 const props = defineProps<{
-    page: number
+    page: number,
+    category: string
 }>()
 onMounted(() => {
     games.value = null
@@ -21,6 +22,7 @@ onMounted(() => {
     })
 })
 
+const category = computed(() => props.category)
 const page = computed(() => props.page)
 const totalPages = ref<number>(0)
 const hasNextPage = computed(() => {
@@ -28,10 +30,14 @@ const hasNextPage = computed(() => {
 })
 const updateKeyword = () => {
     let queryFunction
-    if (keyword.value === '') {
+    if (keyword.value === '' && category.value === '') {
         queryFunction = GameService.getGames(12, page.value)
+    } else if (keyword.value !== '' && category.value === '') {
+        queryFunction = GameService.getGamesByKeyword(12, page.value, keyword.value)
+    } else if (keyword.value === '' && category.value !== '') {
+        queryFunction = GameService.getGamesByCategory(12, page.value, category.value)
     } else {
-        queryFunction = GameService.getGamesByKeyword(keyword.value)
+        queryFunction = GameService.getGamesByKeywordAndCategory(12, page.value,keyword.value, category.value)
     }
     queryFunction.then(res => {
         games.value = res.data
@@ -42,8 +48,9 @@ const updateKeyword = () => {
 
 
 <template>
-    <ProductMainContainer class="flex flex-col w-4xl place-self-center">
-        <h1 class="w-full">Search Results: {{ $route.query.keyword }}</h1>
+    <ProductMainContainer class="flex flex-col w-4xl place-self-center relative">
+        <h1 class="w-full line-clamp-1 truncate">Search Results: {{ $route.query.keyword }}</h1>
+        <RouterLink class="absolute right-0 top-2.5" :to="{ name: 'search-result-view' }">Reset Filter</RouterLink>
         <div v-if="games?.length" class="grid grid-cols-4 gap-5 w-auto">
             <GameCard v-for="game in games" :key="game.id" :game/>
         </div>
