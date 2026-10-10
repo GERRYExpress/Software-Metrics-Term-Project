@@ -1,5 +1,4 @@
 import GameService from '@/service/GameService'
-import WishlistService from '@/service/WishlistService'
 import { useGameStore } from '@/stores/game'
 import BuyerLayoutView from '@/views/BuyerLayoutView.vue'
 import CartView from '@/views/CartView.vue'
@@ -93,7 +92,7 @@ const router = createRouter({
 
 router.beforeEach(to => {
   const defaultTitle = 'KD5F'
-  document.title = to.meta.title ? `KD5F - ${to.meta.title}` : defaultTitle
+  document.title = to.meta.title ? `KD5F - ${String(to.meta.title)}` : defaultTitle
   nProgress.start()
 })
 

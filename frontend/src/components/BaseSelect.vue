@@ -4,7 +4,7 @@ import { ChevronsUpDown } from '@lucide/vue';
 import { useId } from 'vue';
 const inputId = useId()
 
-const modelValue = defineModel()
+const modelValue = defineModel<number>()
 interface OptionProps {
     options: Category[],
     label?: string
