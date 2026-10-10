@@ -12,59 +12,33 @@ type GameRepository struct {
 	Model model.Game
 }
 
-type gameFields struct {
-	productID       string
-	name            string
-	description     string
-	price           string
-	posterURL       string
-	releaseDate     string
-	categoryID      string
-	categoryName    string
-	categoryHidden  string
-	userID          string
-	username        string
-	requirementID   string
-	operatingSystem string
-	processor       string
-	memory          string
-	graphicsCard    string
-	directXVersion  string
-	network         string
-	storage         string
-	soundcard       string
-	additionalNote  string
-	requirementType string
-	mediaID         string
-	mediaURL        string
-}
+const (
+	productIDField       = "product_id"
+	nameField            = "name"
+	descriptionField     = "description"
+	priceField           = "price"
+	posterURLField       = "poster_url"
+	releaseDateField     = "release_date"
+	categoryIDField      = "category_id"
+	categoryHiddenField  = "is_hidden"
+	userIDField          = "user_id"
+	usernameField        = "username"
+	requirementIDField   = "requirement_id"
+	operatingSystemField = "operating_system"
+	processorField       = "processor"
+	memoryField          = "memory"
+	graphicsCardField    = "graphics_card"
+	directXVersionField  = "directx_version"
+	networkField         = "network"
+	storageField         = "storage"
+	soundcardField       = "soundcard"
+	additionalNoteField  = "additional_note"
+	requirementTypeField = "type"
+	mediaIDField         = "media_id"
+	mediaURLField        = "media_url"
+)
 
-var gameQueryFields = gameFields{
-	productID:       "product_id",
-	name:            "name",
-	description:     "description",
-	price:           "price",
-	posterURL:       "poster_url",
-	releaseDate:     "release_date",
-	categoryID:      "category_id",
-	categoryName:    "name",
-	categoryHidden:  "is_hidden",
-	userID:          "user_id",
-	username:        "username",
-	requirementID:   "requirement_id",
-	operatingSystem: "operating_system",
-	processor:       "processor",
-	memory:          "memory",
-	graphicsCard:    "graphics_card",
-	directXVersion:  "directx_version",
-	network:         "network",
-	storage:         "storage",
-	soundcard:       "soundcard",
-	additionalNote:  "additional_note",
-	requirementType: "type",
-	mediaID:         "media_id",
-	mediaURL:        "media_url",
-}
+const existQuery = "EXISTS (SELECT 1 FROM product_categories pc JOIN categories c ON c.category_id = pc.category_id WHERE pc.product_id = products.product_id AND c.name = ?)"
 
 func qualify(alias string, fields ...string) []string {
 	columns := make([]string, len(fields))
@@ -78,30 +52,30 @@ func qualify(alias string, fields ...string) []string {
 	return columns
 }
 
-func (f gameFields) productColumns(alias string) []string {
-	return qualify(alias, f.productID, f.name, f.description, f.price, f.posterURL)
+func productColumns(alias string) []string {
+	return qualify(alias, productIDField, nameField, descriptionField, priceField, posterURLField)
 }
 
-func (f gameFields) listColumns() []string {
-	return append(f.productColumns("p"), qualify("c", f.categoryID, f.categoryName, f.categoryHidden)...)
+func listColumns() []string {
+	return append(productColumns("p"), qualify("c", categoryIDField, nameField, categoryHiddenField)...)
 }
 
-func (f gameFields) detailColumns() []string {
+func detailColumns() []string {
 	columns := append(
-		qualify("p", f.productID, f.name, f.description, f.price, f.posterURL, f.releaseDate),
-		qualify("c", f.categoryID, f.categoryName)...,
+		qualify("p", productIDField, nameField, descriptionField, priceField, posterURLField, releaseDateField),
+		qualify("c", categoryIDField, nameField)...,
 	)
-	columns = append(columns, qualify("a", f.userID, f.username)...)
+	columns = append(columns, qualify("a", userIDField, usernameField)...)
 	columns = append(columns, qualify("hr",
-		f.requirementID, f.operatingSystem, f.processor, f.memory, f.graphicsCard,
-		f.directXVersion, f.network, f.storage, f.soundcard, f.additionalNote, f.requirementType,
+		requirementIDField, operatingSystemField, processorField, memoryField, graphicsCardField,
+		directXVersionField, networkField, storageField, soundcardField, additionalNoteField, requirementTypeField,
 	)...)
-	return append(columns, qualify("m", f.mediaID, f.mediaURL)...)
+	return append(columns, qualify("m", mediaIDField, mediaURLField)...)
 }
 
 func pagedProducts(keyword, category string, limit, page int) squirrel.SelectBuilder {
 	query := squirrel.
-		Select(gameQueryFields.productColumns("")...).
+		Select(productColumns("")...).
 		From("products").
 		OrderBy("product_id").
 		Limit(uint64(limit)).
@@ -110,17 +84,14 @@ func pagedProducts(keyword, category string, limit, page int) squirrel.SelectBui
 		query = query.Where(squirrel.Like{"name": "%" + keyword + "%"})
 	}
 	if category != "" {
-		query = query.Where(squirrel.Expr(
-			"EXISTS (SELECT 1 FROM product_categories pc JOIN categories c ON c.category_id = pc.category_id WHERE pc.product_id = products.product_id AND c.name = ?)",
-			category,
-		))
+		query = query.Where(squirrel.Expr(existQuery, category))
 	}
 	return query
 }
 
 func gamesQuery(products squirrel.SelectBuilder) squirrel.SelectBuilder {
 	return squirrel.
-		Select(gameQueryFields.listColumns()...).
+		Select(listColumns()...).
 		FromSelect(products, "p").
 		LeftJoin("product_categories pc ON pc.product_id = p.product_id").
 		LeftJoin("categories c ON c.category_id = pc.category_id").
@@ -137,10 +108,7 @@ func (r *GameRepository) GetGamesCount(keyword, category string) (int, error) {
 		queryBuilder = queryBuilder.Where(squirrel.Like{"name": "%" + keyword + "%"})
 	}
 	if category != "" {
-		queryBuilder = queryBuilder.Where(squirrel.Expr(
-			"EXISTS (SELECT 1 FROM product_categories pc JOIN categories c ON c.category_id = pc.category_id WHERE pc.product_id = products.product_id AND c.name = ?)",
-			category,
-		))
+		queryBuilder = queryBuilder.Where(squirrel.Expr(existQuery, category))
 	}
 
 	query, args, err := queryBuilder.ToSql()
@@ -257,7 +225,7 @@ func (r *GameRepository) GetGamesByName(keyword, category string, limit, page in
 func (r *GameRepository) GetGame(id int) (*model.GameDetail, error) {
 	mysqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Question)
 	query, args, err := mysqlBuilder.
-		Select(gameQueryFields.detailColumns()...).
+		Select(detailColumns()...).
 		From("products p").
 		LeftJoin("product_categories pc ON pc.product_id = p.product_id").
 		LeftJoin("categories c ON pc.category_id = c.category_id").
@@ -323,9 +291,12 @@ func (r *GameRepository) GetGame(id int) (*model.GameDetail, error) {
 		}
 		if requirementID != nil {
 			output.HardwareRequirement = append(output.HardwareRequirement,
-				model.NewHardware(*requirementID, *operatingSystem, *processor, *memory,
-					*graphicsCard, *directXVersion, *network, *storage, *soundcard,
-					*additionalNote, *reqType))
+				model.NewHardware(model.HardwareData{
+					ID: *requirementID, OS: *operatingSystem, Processor: *processor,
+					Memory: *memory, GraphicsCard: *graphicsCard,
+					DirectXVersion: *directXVersion, Network: *network, Storage: *storage,
+					Soundcard: *soundcard, AdditionalNote: *additionalNote, Type: *reqType,
+				}))
 		}
 	}
 

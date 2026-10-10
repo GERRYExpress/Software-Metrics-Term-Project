@@ -13,15 +13,27 @@ type CartRepository struct {
 	Cart model.Cart
 }
 
+type cartFields struct {
+	userID        string
+	cartGameID    string
+	cartDate      string
+	gameID        string
+	gameName      string
+	gamePrice     string
+	gamePosterUrl string
+	categoryID    string
+	categoryName  string
+}
+
 func (r *CartRepository) GetCarts(userID int) ([]model.Cart, error) {
 	mysqlBuilder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Question)
 	query, args, err := mysqlBuilder.
-		Select("ca.user_id", "ca.product_id", "ca.cart_date", "p.name", "p.price", "p.poster_url", "c.category_id", "c.name").
+		Select(cartUserIDColumn, cartProductIDColumn, cartDateColumn, "p.name", "p.price", "p.poster_url", "c.category_id", "c.name").
 		From("carts ca").
 		LeftJoin("products p on ca.product_id = p.product_id").
 		LeftJoin("product_categories pc ON p.product_id = pc.product_id").
 		LeftJoin("categories c ON c.category_id = pc.category_id AND c.is_hidden = false").
-		Where(squirrel.Eq{"ca.user_id": userID}).
+		Where(squirrel.Eq{cartUserIDColumn: userID}).
 		ToSql()
 	if err != nil {
 		return nil, err
@@ -101,12 +113,12 @@ func (r *CartRepository) AddCart(userID, gameID int) (*model.Cart, error) {
 
 func (r *CartRepository) getCart(userID, gameID int) (*model.Cart, error) {
 	query, args, err := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Question).
-		Select("ca.user_id", "ca.product_id", "ca.cart_date", "p.name", "p.price", "p.poster_url", "c.category_id", "c.name").
+		Select(cartUserIDColumn, cartProductIDColumn, cartDateColumn, "p.name", "p.price", "p.poster_url", "c.category_id", "c.name").
 		From("carts ca").
 		Join("products p ON ca.product_id = p.product_id").
 		LeftJoin("product_categories pc ON p.product_id = pc.product_id").
 		LeftJoin("categories c ON c.category_id = pc.category_id AND c.is_hidden = false").
-		Where(squirrel.Eq{"ca.user_id": userID, "ca.product_id": gameID}).
+		Where(squirrel.Eq{cartUserIDColumn: userID, cartProductIDColumn: gameID}).
 		ToSql()
 	if err != nil {
 		return nil, err
@@ -170,7 +182,7 @@ func (r *CartRepository) DeleteCart(userID, gameID int) (*model.Cart, error) {
 
 	query, args, err := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Question).
 		Delete("carts").
-		Where(squirrel.Eq{"user_id": userID, "product_id": gameID}).
+		Where(squirrel.Eq{cartUserFilter: userID, cartProductFilter: gameID}).
 		ToSql()
 	if err != nil {
 		return nil, err

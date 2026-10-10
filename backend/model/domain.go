@@ -124,18 +124,32 @@ func NewAccount(id int, username string) Account {
 	return Account{ID: NewID(id), Username: NewUsername(username)}
 }
 
-func NewHardware(id int, os, processor, memory, graphicsCard, directXVersion, network, storage, soundcard, additionalNote, hardwareType string) Hardware {
+type HardwareData struct {
+	ID             int
+	OS             string
+	Processor      string
+	Memory         string
+	GraphicsCard   string
+	DirectXVersion string
+	Network        string
+	Storage        string
+	Soundcard      string
+	AdditionalNote string
+	Type           string
+}
+
+func NewHardware(data HardwareData) Hardware {
 	return Hardware{
-		ID:             NewID(id),
-		OS:             NewDescription(os),
-		Processor:      NewDescription(processor),
-		Memory:         NewDescription(memory),
-		GraphicsCard:   NewDescription(graphicsCard),
-		DirectXVersion: NewDescription(directXVersion),
-		Network:        NewDescription(network),
-		Storage:        NewDescription(storage),
-		Soundcard:      NewDescription(soundcard),
-		AdditionalNote: NewDescription(additionalNote),
-		Type:           NewName(hardwareType),
+		ID:             NewID(data.ID),
+		OS:             NewDescription(data.OS),
+		Processor:      NewDescription(data.Processor),
+		Memory:         NewDescription(data.Memory),
+		GraphicsCard:   NewDescription(data.GraphicsCard),
+		DirectXVersion: NewDescription(data.DirectXVersion),
+		Network:        NewDescription(data.Network),
+		Storage:        NewDescription(data.Storage),
+		Soundcard:      NewDescription(data.Soundcard),
+		AdditionalNote: NewDescription(data.AdditionalNote),
+		Type:           NewName(data.Type),
 	}
 }
