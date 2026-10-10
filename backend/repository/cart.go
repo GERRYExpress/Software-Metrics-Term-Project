@@ -55,19 +55,13 @@ func (r *CartRepository) GetCarts(userID int) ([]model.Cart, error) {
 		cartPosition, ok := cartIndex[productID]
 		if !ok {
 			cart := model.Cart{
-				UserID:    cartUserID,
-				ProductID: productID,
-				CartDate:  cartDate,
+				UserID:    model.NewID(cartUserID),
+				ProductID: model.NewID(productID),
+				CartDate:  model.NewDate(cartDate),
 				Game:      model.Game{},
 			}
 			if gameName != nil {
-				cart.Game = model.Game{
-					ID:         productID,
-					Name:       *gameName,
-					Price:      *gamePrice,
-					PosterUrl:  *posterUrl,
-					Categories: make([]model.Category, 0),
-				}
+				cart.Game = model.NewGame(productID, *gameName, "", *gamePrice, *posterUrl)
 			}
 			carts = append(carts, cart)
 			cartPosition = len(carts) - 1
@@ -75,10 +69,8 @@ func (r *CartRepository) GetCarts(userID int) ([]model.Cart, error) {
 		}
 
 		if categoryID != nil {
-			carts[cartPosition].Game.Categories = append(carts[cartPosition].Game.Categories, model.Category{
-				ID:   *categoryID,
-				Name: *categoryName,
-			})
+			carts[cartPosition].Game.Categories = append(carts[cartPosition].Game.Categories,
+				model.NewCategory(*categoryID, *categoryName, false))
 		}
 	}
 	if err := rows.Err(); err != nil {
@@ -147,25 +139,17 @@ func (r *CartRepository) getCart(userID, gameID int) (*model.Cart, error) {
 
 		if !initialized {
 			output = model.Cart{
-				UserID:    cartUserID,
-				ProductID: productID,
-				CartDate:  cartDate,
-				Game: model.Game{
-					ID:         gameID,
-					Name:       gameName,
-					Price:      gamePrice,
-					PosterUrl:  posterURL,
-					Categories: make([]model.Category, 0),
-				},
+				UserID:    model.NewID(cartUserID),
+				ProductID: model.NewID(productID),
+				CartDate:  model.NewDate(cartDate),
+				Game:      model.NewGame(gameID, gameName, "", gamePrice, posterURL),
 			}
 			initialized = true
 		}
 
 		if categoryID != nil {
-			output.Game.Categories = append(output.Game.Categories, model.Category{
-				ID:   *categoryID,
-				Name: *categoryName,
-			})
+			output.Game.Categories = append(output.Game.Categories,
+				model.NewCategory(*categoryID, *categoryName, false))
 		}
 	}
 	if err := rows.Err(); err != nil {

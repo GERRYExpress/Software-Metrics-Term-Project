@@ -55,19 +55,13 @@ func (r *WishlistRepository) GetWishlists(userId int) ([]model.Wishlist, error) 
 		wishlistPosition, ok := wishlistIndex[productID]
 		if !ok {
 			wishlist := model.Wishlist{
-				UserID:       wishlistUserID,
-				ProductID:    productID,
-				WishlistDate: wishlistDate,
+				UserID:       model.NewID(wishlistUserID),
+				ProductID:    model.NewID(productID),
+				WishlistDate: model.NewDate(wishlistDate),
 				Game:         model.Game{},
 			}
 			if gameName != nil {
-				wishlist.Game = model.Game{
-					ID:         productID,
-					Name:       *gameName,
-					Price:      *gamePrice,
-					PosterUrl:  *posterUrl,
-					Categories: make([]model.Category, 0),
-				}
+				wishlist.Game = model.NewGame(productID, *gameName, "", *gamePrice, *posterUrl)
 			}
 			wishlists = append(wishlists, wishlist)
 			wishlistPosition = len(wishlists) - 1
@@ -75,10 +69,8 @@ func (r *WishlistRepository) GetWishlists(userId int) ([]model.Wishlist, error) 
 		}
 
 		if categoryID != nil {
-			wishlists[wishlistPosition].Game.Categories = append(wishlists[wishlistPosition].Game.Categories, model.Category{
-				ID:   *categoryID,
-				Name: *categoryName,
-			})
+			wishlists[wishlistPosition].Game.Categories = append(wishlists[wishlistPosition].Game.Categories,
+				model.NewCategory(*categoryID, *categoryName, false))
 		}
 	}
 	if err := rows.Err(); err != nil {
@@ -147,25 +139,17 @@ func (r *WishlistRepository) getWishlist(userID, gameID int) (*model.Wishlist, e
 
 		if !initialized {
 			output = model.Wishlist{
-				UserID:       wishlistUserID,
-				ProductID:    productID,
-				WishlistDate: wishlistDate,
-				Game: model.Game{
-					ID:         gameID,
-					Name:       gameName,
-					Price:      gamePrice,
-					PosterUrl:  posterURL,
-					Categories: make([]model.Category, 0),
-				},
+				UserID:       model.NewID(wishlistUserID),
+				ProductID:    model.NewID(productID),
+				WishlistDate: model.NewDate(wishlistDate),
+				Game:         model.NewGame(gameID, gameName, "", gamePrice, posterURL),
 			}
 			initialized = true
 		}
 
 		if categoryID != nil {
-			output.Game.Categories = append(output.Game.Categories, model.Category{
-				ID:   *categoryID,
-				Name: *categoryName,
-			})
+			output.Game.Categories = append(output.Game.Categories,
+				model.NewCategory(*categoryID, *categoryName, false))
 		}
 	}
 	if err := rows.Err(); err != nil {

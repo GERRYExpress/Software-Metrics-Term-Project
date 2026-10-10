@@ -1,15 +1,13 @@
 package model
 
-import "time"
-
 type Account struct {
-	ID          int       `json:"id"`
-	Username    string    `json:"username"`
-	Password    string    `json:"password"`
-	CreatedDate time.Time `json:"created_date"`
-	IsBuyer     bool      `json:"is_buyer"`
-	IsSeller    bool      `json:"is_seller"`
-	TotalGame   int       `json:"total_game"`
-	TotalSpend  float64   `json:"total_spend"`
-	TotalSale   float64   `json:"total_sale"`
+	ID          ID       `json:"id"`
+	Username    Username `json:"username"`
+	Password    Password `json:"password"`
+	CreatedDate Date     `json:"created_date"`
+	IsBuyer     Hidden   `json:"is_buyer"`
+	IsSeller    Hidden   `json:"is_seller"`
+	TotalGame   Count    `json:"total_game"`
+	TotalSpend  Amount   `json:"total_spend"`
+	TotalSale   Amount   `json:"total_sale"`
 }

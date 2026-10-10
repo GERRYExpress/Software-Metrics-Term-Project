@@ -1,15 +1,15 @@
 package model
 
 type Hardware struct {
-	ID             int    `json:"id"`
-	OS             string `json:"operatingSystem"`
-	Processor      string `json:"processor"`
-	Memory         string `json:"memory"`
-	GraphicsCard   string `json:"graphicsCard"`
-	DirectXVersion string `json:"directXVersion"`
-	Network        string `json:"network"`
-	Storage        string `json:"storage"`
-	Soundcard      string `json:"soundcard"`
-	AdditionalNote string `json:"additionalNote"`
-	Type           string `json:"type"`
+	ID             ID          `json:"id"`
+	OS             Description `json:"operatingSystem"`
+	Processor      Description `json:"processor"`
+	Memory         Description `json:"memory"`
+	GraphicsCard   Description `json:"graphicsCard"`
+	DirectXVersion Description `json:"directXVersion"`
+	Network        Description `json:"network"`
+	Storage        Description `json:"storage"`
+	Soundcard      Description `json:"soundcard"`
+	AdditionalNote Description `json:"additionalNote"`
+	Type           Name        `json:"type"`
 }
