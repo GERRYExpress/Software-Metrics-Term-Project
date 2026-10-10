@@ -1,6 +1,6 @@
 package model
 
 type Media struct {
-	ID       int    `json:"id"`
-	MediaUrl string `json:"mediaUrl"`
+	ID       ID        `json:"id"`
+	MediaUrl PosterURL `json:"mediaUrl"`
 }
