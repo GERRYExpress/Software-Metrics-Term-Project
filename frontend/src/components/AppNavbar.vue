@@ -37,11 +37,12 @@ const handleFilter = () => {
 
 <template>
     <nav class="w-5xl mx-auto items-center justify-center flex flex-row gap-x-2.5 my-5">
+        <AppNavItem name="home" routeName="landing-page-view"/>
         <div class="relative flex flex-col items-start justify-center w-1/2">
             <Search class="absolute left-1.5"/>
             <BaseInput @input="handleSearch" v-model="searchKeyword" class="px-8"/>
             <BaseSelect @input="handleFilter" v-model="selectedCategory" class="absolute top-0 right-0 rounded-r-lg text-xs" v-if="categories" :options="categories"/>
         </div>
-        <AppNavItem v-for="navItem in navItems" :name="navItem.name" :routeName="navItem.routeName" :key="navItem.name"/>
+        <AppNavItem v-for="navItem in navItems" :key="navItem.routeName" :name="navItem.name" :routeName="navItem.routeName"/>
     </nav>
 </template>

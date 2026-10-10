@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Heart, ShoppingCart, UserRound } from '@lucide/vue';
+import { Heart, Home, ShoppingCart, UserRound } from '@lucide/vue';
 interface NavItemProps {
     name: string
     routeName: string
@@ -16,5 +16,6 @@ withDefaults(defineProps<NavItemProps>(), {
         <ShoppingCart v-if="name === 'cart'"/>
         <Heart v-else-if="name === 'wishlist'"/>
         <UserRound v-else-if="name === 'profile'"/>
+        <Home v-else-if="name === 'home'"/>
     </RouterLink>
 </template>
