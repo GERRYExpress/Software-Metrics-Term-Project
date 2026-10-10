@@ -20,19 +20,25 @@ type Date time.Time
 type Count int
 type Amount float64
 type Hidden bool
+type OrderDate time.Time
+type PaymentMethod string
+type FinalPrice float64
 
-func NewID(value int) ID                         { return ID(value) }
-func NewName(value string) Name                  { return Name(value) }
-func NewDescription(value string) Description    { return Description(value) }
-func NewPrice(value float64) Price               { return Price(value) }
-func NewPosterURL(value string) PosterURL        { return PosterURL(value) }
-func NewReleaseDate(value time.Time) ReleaseDate { return ReleaseDate(value) }
-func NewUsername(value string) Username          { return Username(value) }
-func NewPassword(value string) Password          { return Password(value) }
-func NewDate(value time.Time) Date               { return Date(value) }
-func NewCount(value int) Count                   { return Count(value) }
-func NewAmount(value float64) Amount             { return Amount(value) }
-func NewHidden(value bool) Hidden                { return Hidden(value) }
+func NewID(value int) ID                          { return ID(value) }
+func NewName(value string) Name                   { return Name(value) }
+func NewDescription(value string) Description     { return Description(value) }
+func NewPrice(value float64) Price                { return Price(value) }
+func NewPosterURL(value string) PosterURL         { return PosterURL(value) }
+func NewReleaseDate(value time.Time) ReleaseDate  { return ReleaseDate(value) }
+func NewUsername(value string) Username           { return Username(value) }
+func NewPassword(value string) Password           { return Password(value) }
+func NewDate(value time.Time) Date                { return Date(value) }
+func NewCount(value int) Count                    { return Count(value) }
+func NewAmount(value float64) Amount              { return Amount(value) }
+func NewHidden(value bool) Hidden                 { return Hidden(value) }
+func NewOrderDate(value time.Time) OrderDate      { return OrderDate(value) }
+func NewPaymentMethod(value string) PaymentMethod { return PaymentMethod(value) }
+func NewFinalPrice(value float64) FinalPrice      { return FinalPrice(value) }
 
 func (h *Hidden) Scan(value any) error {
 	switch value := value.(type) {
@@ -82,6 +88,23 @@ func (d *Date) Scan(value any) error {
 }
 
 func (d Date) Value() (driver.Value, error) {
+	return time.Time(d), nil
+}
+
+func (d OrderDate) MarshalJSON() ([]byte, error) {
+	return time.Time(d).MarshalJSON()
+}
+
+func (d *OrderDate) Scan(value any) error {
+	parsed, err := scanTime(value)
+	if err != nil {
+		return err
+	}
+	*d = OrderDate(parsed)
+	return nil
+}
+
+func (d OrderDate) Value() (driver.Value, error) {
 	return time.Time(d), nil
 }
 
@@ -186,5 +209,14 @@ func NewHardware(data HardwareData) Hardware {
 		Soundcard:      NewDescription(data.Soundcard),
 		AdditionalNote: NewDescription(data.AdditionalNote),
 		Type:           NewName(data.Type),
+	}
+}
+
+func NewOrder(id int, orderDate time.Time, paymentMethod string, finalPrice float64) Order {
+	return Order{
+		ID:            NewID(id),
+		OrderDate:     NewOrderDate(orderDate),
+		PaymentMethod: NewPaymentMethod(paymentMethod),
+		FinalPrice:    NewFinalPrice(finalPrice),
 	}
 }

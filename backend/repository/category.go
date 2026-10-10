@@ -40,3 +40,26 @@ func (r *CategoryRepository) GetCategories() ([]model.Category, error) {
 	}
 	return categories, nil
 }
+
+func (r *CategoryRepository) Create(name string) (model.Category, error) {
+	query, args, err := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Question).
+		Insert("categories").
+		Columns("name", "is_hidden").
+		Values(name, false).
+		ToSql()
+	if err != nil {
+		return model.Category{}, err
+	}
+
+	result, err := config.DB.Exec(query, args...)
+	if err != nil {
+		return model.Category{}, err
+	}
+
+	id, err := result.LastInsertId()
+	if err != nil {
+		return model.Category{}, err
+	}
+
+	return model.NewCategory(int(id), name, false), nil
+}

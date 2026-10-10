@@ -12,3 +12,7 @@ type CategoryService struct {
 func (s *CategoryService) GetCategories() ([]model.Category, error) {
 	return s.Repo.GetCategories()
 }
+
+func (s *CategoryService) Create(name string) (model.Category, error) {
+	return s.Repo.Create(name)
+}
