@@ -2,11 +2,13 @@
 const modelValue = defineModel<string | number>()
 interface BaseInputProps {
     label?: string,
-    placeholder?: string
+    placeholder?: string,
+    type?: string
 }
 withDefaults(defineProps<BaseInputProps>(), {
     label: '',
-    placeholder: ''
+    placeholder: '',
+    type: 'text'
 })
 </script>
 
@@ -18,5 +20,5 @@ withDefaults(defineProps<BaseInputProps>(), {
         v-model="modelValue"
         v-bind="$attrs"
         :placeholder="placeholder"
-        type="text"/>
+        :type="type"/>
 </template>
