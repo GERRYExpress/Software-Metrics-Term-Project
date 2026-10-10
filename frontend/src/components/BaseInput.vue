@@ -2,21 +2,23 @@
 const modelValue = defineModel()
 interface BaseInputProps {
     label?: string,
-    placeholder?: string
+    placeholder?: string,
+    type?: string
 }
 withDefaults(defineProps<BaseInputProps>(), {
     label: '',
-    placeholder: ''
+    placeholder: '',
+    type: 'text'
 })
 </script>
 
 <template>
-    <label :for="label" class="w-full font-bold">{{ label }}</label>
+    <label v-if="label" :for="label" class="w-full font-bold">{{ label }}</label>
     <input
         class="w-full bg-tertiary rounded-lg text-white p-2"
         :id="label"
         v-model="modelValue"
         v-bind="$attrs"
         :placeholder="placeholder"
-        type="text"/>
+        :type="type"/>
 </template>

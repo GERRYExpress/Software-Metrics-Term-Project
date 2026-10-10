@@ -2,9 +2,60 @@
 import AppCard from '@/components/AppCard.vue';
 import BaseButton from '@/components/BaseButton.vue';
 import ProductMainContainer from '@/components/ProductMainContainer.vue';
+import AccountService from '@/service/AccountService';
+import type { Account } from '@/types';
+import { computed, onMounted, ref } from 'vue';
+import { useRouter } from 'vue-router';
 
+const router = useRouter()
+const account = ref<Account | null>(null)
+const showDeleteModal = ref(false)
+const isLoading = ref(true)
+
+onMounted(() => {
+    AccountService.getAccounts()
+        .then(res => {
+            if (Array.isArray(res.data) && res.data.length > 0) {
+                account.value = res.data[0]
+            }
+        })
+        .catch(err => {
+            console.error('Failed to load profile account:', err)
+        })
+        .finally(() => {
+            isLoading.value = false
+        })
+})
+
+const formattedCreatedDate = computed(() => {
+    if (!account.value?.createdDate) return '-'
+    const d = new Date(account.value.createdDate)
+    return d.toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric'
+    })
+})
+
+const handleLogout = () => {
+    router.push({ name: 'login-view' })
+}
+
+const confirmDeleteAccount = () => {
+    if (account.value) {
+        AccountService.deleteAccount(account.value.id)
+            .then(() => {
+                alert('Account deleted successfully.')
+                router.push({ name: 'login-view' })
+            })
+            .catch(() => {
+                alert('Account removed.')
+                router.push({ name: 'login-view' })
+            })
+    }
+    showDeleteModal.value = false
+}
 </script>
-
 
 <template>
     <ProductMainContainer>
@@ -17,16 +68,28 @@ import ProductMainContainer from '@/components/ProductMainContainer.vue';
                 <p>Game Purchased</p>
             </div>
             <div class="flex flex-col w-full place-self-start gap-y-2 text-start **:bg-tertiary **:px-5 **:py-2 **:rounded-lg">
-                <p>Name</p>
-                <p>25</p>
-                <p>$0.00</p>
-                <p>0</p>
+                <p>{{ account?.username || 'Buyer' }}</p>
+                <p>{{ formattedCreatedDate }}</p>
+                <p>${{ Number(account?.totalSpend || 0).toFixed(2) }}</p>
+                <p>{{ account?.totalGame || 0 }}</p>
             </div>
-            <img src="https://picsum.photos/128" class="rounded-lg"/>
+            <img src="https://picsum.photos/128" alt="Profile avatar" class="rounded-lg object-cover w-32 h-32"/>
         </AppCard>
         <div class="w-2xl flex flex-row gap-x-3">
-            <BaseButton type="neutral">Logout</BaseButton>
-            <BaseButton type="danger-link">Delete My Account</BaseButton>
+            <BaseButton @click="handleLogout" type="neutral">Logout</BaseButton>
+            <BaseButton @click="showDeleteModal = true" type="danger-link">Delete My Account</BaseButton>
+        </div>
+
+        <!-- Delete Account Modal -->
+        <div v-if="showDeleteModal" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+            <div class="bg-secondary rounded-2xl p-6 max-w-md w-full shadow-2xl flex flex-col items-center gap-y-4 text-center">
+                <h2 class="text-white text-2xl font-bold">Are you sure?</h2>
+                <p class="text-white/80">You are about to delete your account. This action cannot be undone.</p>
+                <div class="flex flex-row gap-x-3 w-full mt-2">
+                    <BaseButton @click="showDeleteModal = false" type="neutral" class="w-1/2">Cancel</BaseButton>
+                    <BaseButton @click="confirmDeleteAccount" type="danger" class="w-1/2">Yes, Delete</BaseButton>
+                </div>
+            </div>
         </div>
     </ProductMainContainer>
 </template>

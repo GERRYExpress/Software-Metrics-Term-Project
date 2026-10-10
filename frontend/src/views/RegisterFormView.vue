@@ -35,9 +35,9 @@ const handleRegister = () => {
             </RouterLink>
             <UserRoundPlus class="size-16"/>
             <form @submit.prevent="handleRegister" class="flex flex-col w-full gap-y-1.5">
-                <BaseInput label="Username" v-model="credential.username"/>
-                <BaseInput label="Username" v-model="credential.password"/>
-                <BaseInput label="Username" v-model="credential.confirmPassword"/>
+                <BaseInput label="Username" v-model="credential.username" placeholder="Username"/>
+                <BaseInput label="Password" type="password" v-model="credential.password" placeholder="Password"/>
+                <BaseInput label="Confirm Password" type="password" v-model="credential.confirmPassword" placeholder="Confirm Password"/>
                 <span class="w-full text-center">
                     Already have an account? <RouterLink :to="{ name: 'login-view' }">Sign in here</RouterLink>
                 </span>

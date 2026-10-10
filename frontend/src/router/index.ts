@@ -1,5 +1,4 @@
 import GameService from '@/service/GameService'
-import WishlistService from '@/service/WishlistService'
 import { useGameStore } from '@/stores/game'
 import BuyerLayoutView from '@/views/BuyerLayoutView.vue'
 import CartView from '@/views/CartView.vue'
@@ -18,7 +17,7 @@ const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
-      path: '/login ',
+      path: '/login',
       name: 'login-view',
       component: LoginFormView,
       meta: { title: 'Login' }

@@ -20,7 +20,12 @@ onMounted(() => {
 
 const handleDelete = (userId: number, gameId: number) => {
     WishlistService.deleteWishlist(userId, gameId)
-        .then(res => alert(res.data))
+        .then(() => {
+            if (wishlists.value) {
+                wishlists.value = wishlists.value.filter(w => w.productId !== gameId)
+            }
+        })
+        .catch(err => console.error(err))
 }
 </script>
 
