@@ -23,9 +23,9 @@ const handleDelete = (userId: number, gameId: number) => {
 
 <template>
     <ProductMainContainer class="w-2xl place-self-center">
-        <h1 class="w-2xl">Cart</h1>
+        <h1 class="w-2xl">Carts</h1>
         <div class="grid grid-cols-4 w-full gap-x-3">
-            <div v-if="!carts" class="w-full flex flex-col col-span-3 gap-y-2.5">
+            <div v-if="carts?.length" class="w-full flex flex-col col-span-3 gap-y-2.5">
                 <ProductListCard @delete-item="handleDelete" v-for="cart in carts" :product="cart" :key="cart.game.id"/>
             </div>
             <div v-else class="col-span-3 flex flex-col items-center justify-center opacity-75 bg-tertiary rounded-xl">
