@@ -4,6 +4,7 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"time"
 )
 
@@ -32,6 +33,40 @@ func NewDate(value time.Time) Date               { return Date(value) }
 func NewCount(value int) Count                   { return Count(value) }
 func NewAmount(value float64) Amount             { return Amount(value) }
 func NewHidden(value bool) Hidden                { return Hidden(value) }
+
+func (h *Hidden) Scan(value any) error {
+	switch value := value.(type) {
+	case bool:
+		*h = Hidden(value)
+	case int64:
+		*h = Hidden(value != 0)
+	case []byte:
+		return h.scanString(string(value))
+	case string:
+		return h.scanString(value)
+	default:
+		return fmt.Errorf("cannot scan %T into hidden value", value)
+	}
+	return nil
+}
+
+func (h *Hidden) scanString(value string) error {
+	parsed, err := strconv.ParseBool(value)
+	if err != nil {
+		var number int64
+		number, err = strconv.ParseInt(value, 10, 64)
+		if err != nil {
+			return fmt.Errorf("cannot scan %q into hidden value", value)
+		}
+		parsed = number != 0
+	}
+	*h = Hidden(parsed)
+	return nil
+}
+
+func (h Hidden) Value() (driver.Value, error) {
+	return bool(h), nil
+}
 
 func (d Date) MarshalJSON() ([]byte, error) {
 	return time.Time(d).MarshalJSON()
