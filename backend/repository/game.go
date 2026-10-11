@@ -73,7 +73,7 @@ func detailColumns() []string {
 	return append(columns, qualify("m", mediaIDField, mediaURLField)...)
 }
 
-func pagedProducts(keyword, category string, limit, page int) squirrel.SelectBuilder {
+func pagedProducts(keyword, category string, sellerID *int, limit, page int) squirrel.SelectBuilder {
 	query := squirrel.
 		Select(productColumns("")...).
 		From("products").
@@ -85,6 +85,9 @@ func pagedProducts(keyword, category string, limit, page int) squirrel.SelectBui
 	}
 	if category != "" {
 		query = query.Where(squirrel.Expr(existQuery, category))
+	}
+	if sellerID != nil {
+		query = query.Where(squirrel.Eq{userIDField: *sellerID})
 	}
 	return query
 }
@@ -99,7 +102,7 @@ func gamesQuery(products squirrel.SelectBuilder) squirrel.SelectBuilder {
 		PlaceholderFormat(squirrel.Question)
 }
 
-func (r *GameRepository) GetGamesCount(keyword, category string) (int, error) {
+func (r *GameRepository) GetGamesCount(keyword, category string, sellerID *int) (int, error) {
 	queryBuilder := squirrel.
 		Select("COUNT(*)").
 		From("products").
@@ -109,6 +112,9 @@ func (r *GameRepository) GetGamesCount(keyword, category string) (int, error) {
 	}
 	if category != "" {
 		queryBuilder = queryBuilder.Where(squirrel.Expr(existQuery, category))
+	}
+	if sellerID != nil {
+		queryBuilder = queryBuilder.Where(squirrel.Eq{userIDField: *sellerID})
 	}
 
 	query, args, err := queryBuilder.ToSql()
@@ -123,8 +129,8 @@ func (r *GameRepository) GetGamesCount(keyword, category string) (int, error) {
 	return count, nil
 }
 
-func (r *GameRepository) GetGames(category string, limit, page int) ([]model.Game, error) {
-	query, args, err := gamesQuery(pagedProducts("", category, limit, page)).ToSql()
+func (r *GameRepository) GetGames(category string, sellerID *int, limit, page int) ([]model.Game, error) {
+	query, args, err := gamesQuery(pagedProducts("", category, sellerID, limit, page)).ToSql()
 	if err != nil {
 		return nil, err
 	}
@@ -172,8 +178,8 @@ func (r *GameRepository) GetGames(category string, limit, page int) ([]model.Gam
 	return games, nil
 }
 
-func (r *GameRepository) GetGamesByName(keyword, category string, limit, page int) ([]model.Game, error) {
-	query, args, err := gamesQuery(pagedProducts(keyword, category, limit, page)).ToSql()
+func (r *GameRepository) GetGamesByName(keyword, category string, sellerID *int, limit, page int) ([]model.Game, error) {
+	query, args, err := gamesQuery(pagedProducts(keyword, category, sellerID, limit, page)).ToSql()
 
 	if err != nil {
 		return nil, err

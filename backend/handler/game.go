@@ -26,16 +26,25 @@ func (h *GameHandler) GetGames(c *gin.Context) {
 	}
 	keyword := c.Query("keyword")
 	category := c.Query("category")
+	var sellerID *int
+	if rawSellerID := c.Query("sellerId"); rawSellerID != "" {
+		parsedSellerID, parseErr := strconv.Atoi(rawSellerID)
+		if parseErr != nil || parsedSellerID < 1 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "sellerId must be a positive integer"})
+			return
+		}
+		sellerID = &parsedSellerID
+	}
 	if keyword != "" {
-		games, err = h.Service.GetGamesByName(keyword, category, limit, page)
+		games, err = h.Service.GetGamesByName(keyword, category, sellerID, limit, page)
 	} else {
-		games, err = h.Service.GetGames(category, limit, page)
+		games, err = h.Service.GetGames(category, sellerID, limit, page)
 	}
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	totalCount, err := h.Service.GetGamesCount(keyword, category)
+	totalCount, err := h.Service.GetGamesCount(keyword, category, sellerID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

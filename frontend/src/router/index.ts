@@ -1,4 +1,5 @@
 import GameService from '@/service/GameService'
+import { useAuthStore } from '@/stores/auth'
 import { useSellerStore } from '@/stores/seller'
 import { useGameStore } from '@/stores/game'
 import BuyerLayoutView from '@/views/BuyerLayoutView.vue'
@@ -99,7 +100,7 @@ const router = createRouter({
       path: '/seller',
       name: 'seller-layout-view',
       component: SellerLayoutView,
-      meta: { title: 'Seller Center', requiresSeller: true },
+      meta: { title: 'Seller Center', requiresAuth: true },
       children: [
         {
           path: '',
@@ -109,25 +110,25 @@ const router = createRouter({
           path: 'dashboard',
           name: 'seller-dashboard-view',
           component: SellerDashboardView,
-          meta: { title: 'Seller Dashboard', requiresSeller: true }
+          meta: { title: 'Seller Dashboard', requiresAuth: true }
         },
         {
           path: 'products/add',
           name: 'seller-product-add-view',
           component: SellerProductFormView,
-          meta: { title: 'Add Product', requiresSeller: true }
+          meta: { title: 'Add Product', requiresAuth: true }
         },
         {
           path: 'products/:id/edit',
           name: 'seller-product-edit-view',
           component: SellerProductFormView,
-          meta: { title: 'Edit Product', requiresSeller: true }
+          meta: { title: 'Edit Product', requiresAuth: true }
         },
         {
           path: 'profile',
           name: 'seller-profile-view',
           component: SellerProfileView,
-          meta: { title: 'Seller Profile', requiresSeller: true }
+          meta: { title: 'Seller Profile', requiresAuth: true }
         }
       ]
     }
@@ -135,8 +136,15 @@ const router = createRouter({
 })
 
 router.beforeEach(async to => {
-  if (to.matched.some(record => record.meta.requiresSeller)) {
+  if (to.matched.some(record => record.meta.requiresAuth)) {
+    const authStore = useAuthStore()
     const sellerStore = useSellerStore()
+    if (!authStore.isLoggedIn) {
+      return {
+        name: 'login-view',
+        query: { role: 'true', redirect: to.fullPath }
+      }
+    }
     try {
       await sellerStore.loadSeller()
     } catch {
