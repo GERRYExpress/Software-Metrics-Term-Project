@@ -9,6 +9,6 @@ type OrderService struct {
 	Repo *repository.OrderRepository
 }
 
-func (s *OrderService) Create(userID int, paymentMethod string, finalPrice float64) (*model.Order, error) {
-	return s.Repo.Create(userID, paymentMethod, finalPrice)
+func (s *OrderService) Create(order model.Order) (*model.Order, error) {
+	return s.Repo.Create(order)
 }

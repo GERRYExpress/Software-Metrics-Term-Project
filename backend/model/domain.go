@@ -212,11 +212,13 @@ func NewHardware(data HardwareData) Hardware {
 	}
 }
 
-func NewOrder(id int, orderDate time.Time, paymentMethod string, finalPrice float64) Order {
+func NewOrder(id, userID int, orderDate time.Time, paymentMethod string, finalPrice float64) Order {
 	return Order{
 		ID:            NewID(id),
+		UserID:        NewID(userID),
 		OrderDate:     NewOrderDate(orderDate),
 		PaymentMethod: NewPaymentMethod(paymentMethod),
 		FinalPrice:    NewFinalPrice(finalPrice),
+		Games:         make([]Game, 0),
 	}
 }

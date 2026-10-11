@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"database/sql"
 	"software-metrics-project/config"
 	"software-metrics-project/model"
 	"time"
@@ -12,23 +13,38 @@ type OrderRepository struct {
 	Model *model.Order
 }
 
-func (r *OrderRepository) Create(userID int, paymentMethod string, finalPrice float64) (*model.Order, error) {
+func (r *OrderRepository) Create(order model.Order) (*model.Order, error) {
+	tx, err := config.DB.Begin()
+	if err != nil {
+		return nil, err
+	}
 	query, args, err := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Question).
 		Insert("orders").
 		Columns("user_id", "order_date", "payment_method", "final_price").
-		Values(userID, squirrel.Expr("NOW()"), paymentMethod, finalPrice).
+		Values(order.UserID, squirrel.Expr("NOW()"), order.PaymentMethod, order.FinalPrice).
 		ToSql()
 	if err != nil {
 		return nil, err
 	}
 
-	result, err := config.DB.Exec(query, args...)
+	result, err := tx.Exec(query, args...)
 	if err != nil {
+		_ = tx.Rollback()
 		return nil, err
 	}
 
 	orderID, err := result.LastInsertId()
 	if err != nil {
+		_ = tx.Rollback()
+		return nil, err
+	}
+	for _, game := range order.Games {
+		if _, err = tx.Exec("INSERT INTO order_items (order_id, product_id) VALUES (?, ?)", orderID, game.ID); err != nil {
+			_ = tx.Rollback()
+			return nil, err
+		}
+	}
+	if err = tx.Commit(); err != nil {
 		return nil, err
 	}
 	return r.getOrder(int(orderID))
@@ -36,9 +52,18 @@ func (r *OrderRepository) Create(userID int, paymentMethod string, finalPrice fl
 
 func (r *OrderRepository) getOrder(orderID int) (*model.Order, error) {
 	query, args, err := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Question).
-		Select(orderIDColumn, orderDateColumn, paymentMethodColumn, finalPriceColumn).
+		Select(append(
+			[]string{orderIDColumn, orderUserIDColumn, orderDateColumn, paymentMethodColumn, finalPriceColumn},
+			append(qualify("p", productIDField, nameField, descriptionField, priceField, posterURLField, releaseDateField),
+				qualify("c", categoryIDField, nameField, categoryHiddenField)...)...,
+		)...).
 		From("orders o").
+		Join("order_items oi ON oi.order_id = o.order_id").
+		Join("products p ON p.product_id = oi.product_id").
+		LeftJoin("product_categories pc ON pc.product_id = p.product_id").
+		LeftJoin("categories c ON c.category_id = pc.category_id").
 		Where(squirrel.Eq{"o.order_id": orderID}).
+		OrderBy("p.product_id", "c.category_id").
 		ToSql()
 	if err != nil {
 		return nil, err
@@ -46,14 +71,55 @@ func (r *OrderRepository) getOrder(orderID int) (*model.Order, error) {
 
 	var (
 		id            int
-		orderDate     model.OrderDate
-		paymentMethod model.PaymentMethod
-		finalPrice    model.FinalPrice
+		userID        int
+		orderDate     time.Time
+		paymentMethod string
+		finalPrice    float64
 	)
-	if err := config.DB.QueryRow(query, args...).Scan(&id, &orderDate, &paymentMethod, &finalPrice); err != nil {
+
+	var order *model.Order
+	gameIndexes := make(map[int]int)
+	rows, err := config.DB.Query(query, args...)
+	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
-	order := model.NewOrder(int(id), time.Time(orderDate), string(paymentMethod), float64(finalPrice))
-	return &order, nil
+	for rows.Next() {
+		var (
+			gameID       int
+			gameName     string
+			description  string
+			price        float64
+			posterURL    string
+			releaseDate  time.Time
+			categoryID   *int
+			categoryName *string
+			isHidden     *model.Hidden
+		)
+		if err := rows.Scan(&id, &userID, &orderDate, &paymentMethod, &finalPrice, &gameID, &gameName,
+			&description, &price, &posterURL, &releaseDate, &categoryID, &categoryName, &isHidden); err != nil {
+			return nil, err
+		}
+		if order == nil {
+			created := model.NewOrder(id, userID, orderDate, paymentMethod, finalPrice)
+			order = &created
+		}
+		index, exists := gameIndexes[gameID]
+		if !exists {
+			order.Games = append(order.Games, model.NewGame(gameID, gameName, description, price, posterURL))
+			index = len(order.Games) - 1
+			gameIndexes[gameID] = index
+		}
+		if categoryID != nil && categoryName != nil {
+			order.Games[index].AddCategory(model.NewCategory(*categoryID, *categoryName, isHidden != nil && bool(*isHidden)))
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	if order == nil {
+		return nil, sql.ErrNoRows
+	}
+	return order, nil
 }
