@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"software-metrics-project/config"
 	"software-metrics-project/handler"
 	"software-metrics-project/repository"
@@ -17,6 +18,9 @@ type Endpoint interface {
 }
 
 func main() {
+	if err := config.LoadEnv(".env"); err != nil {
+		log.Fatal(err)
+	}
 	config.ConnectDB()
 	r := gin.Default()
 	r.Use(cors.New(cors.Config{
@@ -58,6 +62,8 @@ func CreateAccountEndpoint(r *gin.RouterGroup) {
 	service := &service.AccountService{Repo: repo}
 	handler := &handler.AccountHandler{Service: service}
 	r.GET("", handler.GetAccounts)
+	r.POST("", handler.Register)
+	r.POST("/login", handler.Login)
 }
 
 func CreateGameEndpoint(r *gin.RouterGroup) {
