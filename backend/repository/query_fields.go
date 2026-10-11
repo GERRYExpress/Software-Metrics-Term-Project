@@ -12,4 +12,10 @@ const (
 	wishlistDateColumn      = "w.wishlist_date"
 	wishlistUserFilter      = "user_id"
 	wishlistProductFilter   = "product_id"
+
+	orderIDColumn       = "o.order_id"
+	orderUserIDColumn   = "o.user_id"
+	orderDateColumn     = "o.order_date"
+	paymentMethodColumn = "o.payment_method"
+	finalPriceColumn    = "o.final_price"
 )
