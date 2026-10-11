@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"slices"
 	"software-metrics-project/config"
 	"software-metrics-project/model"
 	"time"
@@ -231,7 +232,7 @@ func (r *GameRepository) GetGame(id int) (*model.GameDetail, error) {
 		LeftJoin("categories c ON pc.category_id = c.category_id").
 		LeftJoin("accounts a ON a.user_id = p.user_id").
 		LeftJoin("hardware_requirement hr ON hr.product_id = p.product_id").
-		LeftJoin("media m ON m.media_id = p.product_id").
+		LeftJoin("media m ON m.product_id = p.product_id").
 		Where(squirrel.Eq{"c.is_hidden": false, "p.product_id": id}).
 		ToSql()
 	if err != nil {
@@ -246,6 +247,7 @@ func (r *GameRepository) GetGame(id int) (*model.GameDetail, error) {
 
 	var output model.GameDetail
 	initialized := false
+	mediaSeen := make(map[int]struct{})
 	for rows.Next() {
 		var (
 			gameID          int
@@ -298,10 +300,19 @@ func (r *GameRepository) GetGame(id int) (*model.GameDetail, error) {
 					Soundcard: *soundcard, AdditionalNote: *additionalNote, Type: *reqType,
 				}))
 		}
+		if mediaID != nil && mediaUrl != nil {
+			if _, exists := mediaSeen[*mediaID]; exists {
+				continue
+			}
+			mediaSeen[*mediaID] = struct{}{}
+			output.Media = append(output.Media,
+				model.NewMedia(*mediaID, *mediaUrl))
+		}
 	}
 
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
+	slices.Reverse(output.Media)
 	return &output, nil
 }
