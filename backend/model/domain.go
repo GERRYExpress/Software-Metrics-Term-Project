@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -23,6 +24,7 @@ type Hidden bool
 type OrderDate time.Time
 type PaymentMethod string
 type FinalPrice float64
+type MediaURL string
 
 func NewID(value int) ID                          { return ID(value) }
 func NewName(value string) Name                   { return Name(value) }
@@ -39,6 +41,7 @@ func NewHidden(value bool) Hidden                 { return Hidden(value) }
 func NewOrderDate(value time.Time) OrderDate      { return OrderDate(value) }
 func NewPaymentMethod(value string) PaymentMethod { return PaymentMethod(value) }
 func NewFinalPrice(value float64) FinalPrice      { return FinalPrice(value) }
+func NewMediaURL(value string) MediaURL           { return MediaURL(value) }
 
 func (h *Hidden) Scan(value any) error {
 	switch value := value.(type) {
@@ -209,6 +212,18 @@ func NewHardware(data HardwareData) Hardware {
 		Soundcard:      NewDescription(data.Soundcard),
 		AdditionalNote: NewDescription(data.AdditionalNote),
 		Type:           NewName(data.Type),
+	}
+}
+
+func NewMedia(id int, mediaUrl string) Media {
+	mediaType := "image"
+	if strings.Contains(mediaUrl, "youtube.com") || strings.Contains(mediaUrl, "youtu.be") {
+		mediaType = "video"
+	}
+	return Media{
+		ID:       ID(id),
+		MediaUrl: NewMediaURL(mediaUrl),
+		Type:     mediaType,
 	}
 }
 
