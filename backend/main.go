@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"os"
 	"software-metrics-project/config"
 	"software-metrics-project/handler"
 	"software-metrics-project/repository"
@@ -20,6 +21,9 @@ type Endpoint interface {
 func main() {
 	if err := config.LoadEnv(".env"); err != nil {
 		log.Fatal(err)
+	}
+	if os.Getenv("JWT_SECRET") == "" {
+		log.Fatal("JWT_SECRET is not configured; copy backend/.env.example to backend/.env and set a secret")
 	}
 	config.ConnectDB()
 	r := gin.Default()

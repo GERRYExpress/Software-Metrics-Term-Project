@@ -9,6 +9,7 @@ import { onMounted, onUnmounted, ref, watchEffect } from 'vue';
 
 const games = ref<Game[] | null>(null)
 const showWelcome = ref(false)
+const isLoggedIn = ref(Boolean(sessionStorage.getItem('kd5f_token')))
 
 const banners = [
     '/Landing/Landing-Page-Carousel-1.png',
@@ -114,7 +115,7 @@ const closeWelcome = () => {
             <RouterLink :to="{ name: 'search-result-view' }" class="text-xl">
                 EXPLORE MORE
             </RouterLink>
-            <p class="text-white/60 text-sm">
+            <p v-if="!isLoggedIn" class="text-white/60 text-sm">
                 Or get started:
                 <RouterLink :to="{ name: 'login-view' }" class="text-action">Sign In</RouterLink> or
                 <RouterLink :to="{ name: 'register-view' }" class="text-action">Register</RouterLink>
