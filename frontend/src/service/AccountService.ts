@@ -1,9 +1,18 @@
-import type { LoginForm } from "@/types";
+import type { LoginForm, RegisterForm } from "@/types";
 import apiClient from "./AxiosClient";
 
 export default {
     authenticate(account: LoginForm) {
-        return apiClient.post('/api/v1/accounts/authenticate', account)
+        return apiClient.post('/api/v1/accounts/login', {
+            username: account.username,
+            password: account.password
+        })
+    },
+    register(account: RegisterForm) {
+        return apiClient.post('/api/v1/accounts', {
+            username: account.username,
+            password: account.password
+        })
     },
     getAccounts() {
         return apiClient.get('/api/v1/accounts')
