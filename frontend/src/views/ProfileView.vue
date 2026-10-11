@@ -4,6 +4,7 @@ import BaseButton from '@/components/BaseButton.vue';
 import ProductMainContainer from '@/components/ProductMainContainer.vue';
 import AccountService from '@/service/AccountService';
 import { useUserActionStore } from '@/stores/userAction';
+import { useAuthStore } from '@/stores/auth';
 import type { Account } from '@/types';
 import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
@@ -12,12 +13,13 @@ const router = useRouter()
 const account = ref<Account | null>(null)
 const showDeleteModal = ref(false)
 const isLoading = ref(true)
+const authStore = useAuthStore()
 
 onMounted(() => {
     AccountService.getAccounts()
         .then(res => {
-            if (Array.isArray(res.data) && res.data.length > 0) {
-                account.value = res.data[0]
+            if (Array.isArray(res.data)) {
+                account.value = res.data.find(item => item.id === authStore.account?.id) ?? null
             }
         })
         .catch(err => {
@@ -41,6 +43,7 @@ const formattedCreatedDate = computed(() => {
 const userActionStore = useUserActionStore()
 
 const handleLogout = () => {
+    authStore.logout()
     userActionStore.notify('Logged out successfully', 'info')
     router.push({ name: 'login-view' })
 }

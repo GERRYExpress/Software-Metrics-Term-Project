@@ -5,12 +5,14 @@ import ProductMainContainer from '@/components/ProductMainContainer.vue'
 import AccountService from '@/service/AccountService'
 import { useSellerStore } from '@/stores/seller'
 import { useUserActionStore } from '@/stores/userAction'
+import { useAuthStore } from '@/stores/auth'
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
 const sellerStore = useSellerStore()
 const userActionStore = useUserActionStore()
+const authStore = useAuthStore()
 const showDeleteModal = ref(false)
 const isDeleting = ref(false)
 const errorMessage = ref('')
@@ -33,6 +35,7 @@ const formattedCreatedDate = computed(() => {
 
 function handleLogout() {
     sellerStore.clear()
+    authStore.logout()
     userActionStore.notify('Logged out successfully.', 'info')
     router.push({ name: 'login-view', query: { role: 'true' } })
 }

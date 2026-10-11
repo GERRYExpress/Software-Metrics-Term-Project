@@ -1,5 +1,6 @@
 import CartService from '@/service/CartService';
 import WishlistService from '@/service/WishlistService';
+import { useAuthStore } from './auth';
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
 
@@ -14,6 +15,7 @@ export const useUserActionStore = defineStore('userAction', () => {
     const wishlistIds = ref<number[]>([])
     const activeNotification = ref<NotificationPayload | null>(null)
     const isInitialized = ref(false)
+    const authStore = useAuthStore()
     let timeoutId: ReturnType<typeof setTimeout> | null = null
 
     const notify = (message: string, type: 'cart' | 'wishlist' | 'success' | 'info' = 'success') => {
@@ -41,7 +43,10 @@ export const useUserActionStore = defineStore('userAction', () => {
         if (isInitialized.value) return
         isInitialized.value = true
 
-        CartService.getCarts(1)
+        const userId = authStore.account?.id
+        if (!userId) return
+
+        CartService.getCarts(userId)
             .then(res => {
                 if (Array.isArray(res.data)) {
                     cartIds.value = res.data.map(item => item.productId ?? item.game?.id).filter(Boolean)
@@ -51,7 +56,7 @@ export const useUserActionStore = defineStore('userAction', () => {
                 // If backend is offline, maintain local state
             })
 
-        WishlistService.getWishlists(1)
+        WishlistService.getWishlists(userId)
             .then(res => {
                 if (Array.isArray(res.data)) {
                     wishlistIds.value = res.data.map(item => item.productId ?? item.game?.id).filter(Boolean)
@@ -76,7 +81,13 @@ export const useUserActionStore = defineStore('userAction', () => {
             return
         }
 
-        CartService.addCart(1, gameId)
+        const userId = authStore.account?.id
+        if (!userId) {
+            notify('Please sign in before adding items to your cart.', 'info')
+            return
+        }
+
+        CartService.addCart(userId, gameId)
             .then(() => {
                 if (!cartIds.value.includes(gameId)) {
                     cartIds.value.push(gameId)
@@ -94,7 +105,9 @@ export const useUserActionStore = defineStore('userAction', () => {
 
     const toggleWishlist = (gameId: number, gameName: string) => {
         if (wishlistIds.value.includes(gameId)) {
-            WishlistService.deleteWishlist(1, gameId)
+            const userId = authStore.account?.id
+            if (!userId) return
+            WishlistService.deleteWishlist(userId, gameId)
                 .then(() => {
                     wishlistIds.value = wishlistIds.value.filter(id => id !== gameId)
                     notify(`Removed "${gameName}" from wishlist`, 'info')
@@ -104,7 +117,12 @@ export const useUserActionStore = defineStore('userAction', () => {
                     notify(`Removed "${gameName}" from wishlist`, 'info')
                 })
         } else {
-            WishlistService.addWishlist(1, gameId)
+            const userId = authStore.account?.id
+            if (!userId) {
+                notify('Please sign in before adding items to your wishlist.', 'info')
+                return
+            }
+            WishlistService.addWishlist(userId, gameId)
                 .then(() => {
                     wishlistIds.value.push(gameId)
                     notify(`Added "${gameName}" to wishlist!`, 'wishlist')
@@ -129,4 +147,3 @@ export const useUserActionStore = defineStore('userAction', () => {
         toggleWishlist
     }
 })
-

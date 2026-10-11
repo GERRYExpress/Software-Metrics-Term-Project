@@ -5,12 +5,14 @@ import BaseButton from '@/components/BaseButton.vue';
 import BaseInput from '@/components/BaseInput.vue';
 import BaseToggle from '@/components/BaseToggle.vue';
 import AccountService from '@/service/AccountService';
+import { useAuthStore } from '@/stores/auth';
 import type { LoginForm } from '@/types';
 import { UserRound } from '@lucide/vue';
 import { ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 const router = useRouter()
 const route = useRoute()
+const authStore = useAuthStore()
 const loginOptions = ['Buyer', 'Seller']
 const credential = ref<LoginForm>({
     username: '',
@@ -32,8 +34,7 @@ const handleLogin = async () => {
     isLoading.value = true
     try {
         const response = await AccountService.authenticate(credential.value)
-        sessionStorage.setItem('kd5f_token', response.data.token)
-        sessionStorage.setItem('kd5f_account', JSON.stringify(response.data.account))
+        authStore.setSession(response.data.account, response.data.token)
         await router.push({
             name: credential.value.isSeller ? 'seller-dashboard-view' : 'landing-page-view'
         })

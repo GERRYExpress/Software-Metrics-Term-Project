@@ -1,5 +1,6 @@
 import AccountService from '@/service/AccountService'
 import type { Account } from '@/types'
+import { useAuthStore } from './auth'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
@@ -7,16 +8,17 @@ export const useSellerStore = defineStore('seller', () => {
     const account = ref<Account | null>(null)
     const isLoading = ref(false)
     const errorMessage = ref('')
+    const authStore = useAuthStore()
 
     const loadSeller = async () => {
-        if (account.value) return account.value
+        if (account.value?.id === authStore.account?.id) return account.value
 
         isLoading.value = true
         errorMessage.value = ''
         try {
             const response = await AccountService.getAccounts()
             const accounts = (response.data as Array<Partial<Account> & Record<string, unknown>>).map(normalizeAccount)
-            account.value = accounts.find(candidate => candidate.isSeller) ?? null
+            account.value = accounts.find(candidate => candidate.id === authStore.account?.id && candidate.isSeller) ?? null
             if (!account.value) {
                 throw new Error('No seller account is available.')
             }
