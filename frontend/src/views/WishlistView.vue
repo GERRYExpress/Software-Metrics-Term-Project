@@ -3,15 +3,18 @@ import ProductListCard from '@/components/ProductListCard.vue';
 import ProductMainContainer from '@/components/ProductMainContainer.vue';
 import WishlistService from '@/service/WishlistService';
 import { useUserActionStore } from '@/stores/userAction';
+import { useAuthStore } from '@/stores/auth';
 import type { Wishlist } from '@/types';
 import { onMounted, ref, watchEffect } from 'vue';
 
 const userActionStore = useUserActionStore()
+const authStore = useAuthStore()
 const wishlists = ref<Wishlist[] | null>(null)
 
 onMounted(() => {
     watchEffect(() => {
-        WishlistService.getWishlists(1)
+        if (!authStore.account) return
+        WishlistService.getWishlists(authStore.account.id)
             .then(res => {
                 wishlists.value = res.data
             })

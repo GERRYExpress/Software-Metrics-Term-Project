@@ -4,11 +4,13 @@ import ProductMainContainer from '@/components/ProductMainContainer.vue';
 import WelcomeModal from '@/components/WelcomeModal.vue';
 import GameService from '@/service/GameService';
 import type { Game } from '@/types';
+import { useAuthStore } from '@/stores/auth';
 import { ChevronLeft, ChevronRight } from '@lucide/vue';
 import { onMounted, onUnmounted, ref, watchEffect } from 'vue';
 
 const games = ref<Game[] | null>(null)
 const showWelcome = ref(false)
+const authStore = useAuthStore()
 
 const banners = [
     '/Landing/Landing-Page-Carousel-1.png',
@@ -44,7 +46,7 @@ onMounted(() => {
     timer = setInterval(nextBanner, 5000)
 
     // Check if welcome popup was already displayed
-    if (!sessionStorage.getItem('kd5f_welcome_seen')) {
+    if (!localStorage.getItem('kd5f_welcome_seen')) {
         showWelcome.value = true
     }
 })
@@ -55,7 +57,7 @@ onUnmounted(() => {
 
 const closeWelcome = () => {
     showWelcome.value = false
-    sessionStorage.setItem('kd5f_welcome_seen', 'true')
+    localStorage.setItem('kd5f_welcome_seen', 'true')
 }
 </script>
 
@@ -114,7 +116,7 @@ const closeWelcome = () => {
             <RouterLink :to="{ name: 'search-result-view' }" class="text-xl">
                 EXPLORE MORE
             </RouterLink>
-            <p class="text-white/60 text-sm">
+            <p v-if="!authStore.isLoggedIn" class="text-white/60 text-sm">
                 Or get started:
                 <RouterLink :to="{ name: 'login-view' }" class="text-action">Sign In</RouterLink> or
                 <RouterLink :to="{ name: 'register-view' }" class="text-action">Register</RouterLink>

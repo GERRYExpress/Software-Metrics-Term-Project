@@ -32,7 +32,8 @@ async function loadDashboard() {
     errorMessage.value = ''
     try {
         const seller = await sellerStore.loadSeller()
-        const [categoryResponse, productResponse] = await Promise.all([
+    if (!seller) throw new Error('No seller account is logged in.')
+    const [categoryResponse, productResponse] = await Promise.all([
             CategoryService.getCategories(),
             GameService.getGamesBySeller(seller.id)
         ])

@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"os"
 	"software-metrics-project/config"
 	"software-metrics-project/handler"
 	"software-metrics-project/repository"
@@ -21,11 +22,14 @@ func main() {
 	if err := config.LoadEnv(".env"); err != nil {
 		log.Fatal(err)
 	}
+	if os.Getenv("JWT_SECRET") == "" {
+		log.Fatal("JWT_SECRET is not configured; copy backend/.env.example to backend/.env and set a secret")
+	}
 	config.ConnectDB()
 	r := gin.Default()
 	r.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"http://localhost:5173"},
-		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
 		ExposeHeaders:    []string{"Content-Length", "X-Total-Count"},
 		AllowCredentials: false,

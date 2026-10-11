@@ -42,6 +42,7 @@ async function loadForm() {
     errorMessage.value = ''
     try {
         const seller = await sellerStore.loadSeller()
+        if (!seller) throw new Error('No seller account is logged in.')
         const categoryResponse = await CategoryService.getCategories()
         categories.value = categoryResponse.data
 

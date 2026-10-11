@@ -6,11 +6,13 @@ import ProductListCard from '@/components/ProductListCard.vue';
 import ProductMainContainer from '@/components/ProductMainContainer.vue';
 import CartService from '@/service/CartService';
 import { useUserActionStore } from '@/stores/userAction';
+import { useAuthStore } from '@/stores/auth';
 import type { Cart } from '@/types';
 import { computed, onMounted, ref, watchEffect } from 'vue';
 import { useRouter } from 'vue-router';
 
 const router = useRouter()
+const authStore = useAuthStore()
 const carts = ref<Cart[] | null>(null)
 const showPaymentModal = ref(false)
 const showSuccessModal = ref(false)
@@ -27,7 +29,8 @@ const totalAmount = computed(() => {
 
 onMounted(() => {
     watchEffect(() => {
-        CartService.getCarts(1)
+        if (!authStore.account) return
+        CartService.getCarts(authStore.account.id)
             .then(res => carts.value = res.data)
             .catch(err => console.log(err))
     })
