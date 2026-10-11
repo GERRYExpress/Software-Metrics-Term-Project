@@ -253,6 +253,8 @@ func (r *GameRepository) GetGame(id int) (*model.GameDetail, error) {
 
 	var output model.GameDetail
 	initialized := false
+	categorySeen := make(map[int]struct{})
+	requirementSeen := make(map[int]struct{})
 	mediaSeen := make(map[int]struct{})
 	for rows.Next() {
 		var (
@@ -291,11 +293,25 @@ func (r *GameRepository) GetGame(id int) (*model.GameDetail, error) {
 		}
 
 		if categoryID != nil {
+			if _, exists := categorySeen[*categoryID]; exists {
+				categoryID = nil
+			} else {
+				categorySeen[*categoryID] = struct{}{}
+			}
+		}
+		if categoryID != nil {
 			output.Categories = append(output.Categories, model.NewCategory(*categoryID, *categoryName, false))
 		}
 
 		if userID != nil {
 			output.Account = model.NewAccount(*userID, *username)
+		}
+		if requirementID != nil {
+			if _, exists := requirementSeen[*requirementID]; exists {
+				requirementID = nil
+			} else {
+				requirementSeen[*requirementID] = struct{}{}
+			}
 		}
 		if requirementID != nil {
 			output.HardwareRequirement = append(output.HardwareRequirement,
