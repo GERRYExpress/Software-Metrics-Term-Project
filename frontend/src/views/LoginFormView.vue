@@ -35,7 +35,10 @@ const handleLogin = async () => {
     try {
         const response = await AccountService.authenticate(credential.value)
         authStore.setSession(response.data.account, response.data.token)
-        await router.push({
+        const redirect = typeof route.query.redirect === 'string' && route.query.redirect.startsWith('/')
+            ? route.query.redirect
+            : null
+        await router.push(redirect ?? {
             name: credential.value.isSeller ? 'seller-dashboard-view' : 'landing-page-view'
         })
     } catch (error) {

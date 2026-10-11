@@ -46,7 +46,7 @@ onMounted(() => {
     timer = setInterval(nextBanner, 5000)
 
     // Check if welcome popup was already displayed
-    if (!sessionStorage.getItem('kd5f_welcome_seen')) {
+    if (!localStorage.getItem('kd5f_welcome_seen')) {
         showWelcome.value = true
     }
 })
@@ -57,7 +57,7 @@ onUnmounted(() => {
 
 const closeWelcome = () => {
     showWelcome.value = false
-    sessionStorage.setItem('kd5f_welcome_seen', 'true')
+    localStorage.setItem('kd5f_welcome_seen', 'true')
 }
 </script>
 

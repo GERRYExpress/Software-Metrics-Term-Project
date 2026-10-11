@@ -1,6 +1,5 @@
 import GameService from '@/service/GameService'
 import { useAuthStore } from '@/stores/auth'
-import { useSellerStore } from '@/stores/seller'
 import { useGameStore } from '@/stores/game'
 import BuyerLayoutView from '@/views/BuyerLayoutView.vue'
 import CartView from '@/views/CartView.vue'
@@ -135,23 +134,14 @@ const router = createRouter({
   ],
 })
 
-router.beforeEach(async to => {
-  if (to.matched.some(record => record.meta.requiresAuth)) {
-    const authStore = useAuthStore()
-    const sellerStore = useSellerStore()
-    if (!authStore.isLoggedIn) {
-      return {
-        name: 'login-view',
-        query: { role: 'true', redirect: to.fullPath }
-      }
-    }
-    try {
-      await sellerStore.loadSeller()
-    } catch {
-      return {
-        name: 'login-view',
-        query: { role: 'true', redirect: to.fullPath }
-      }
+router.beforeEach(to => {
+  const authStore = useAuthStore()
+  const isAuthPage = to.name === 'login-view' || to.name === 'register-view'
+
+  if (!isAuthPage && !authStore.isLoggedIn) {
+    return {
+      name: 'login-view',
+      query: { redirect: to.fullPath }
     }
   }
 

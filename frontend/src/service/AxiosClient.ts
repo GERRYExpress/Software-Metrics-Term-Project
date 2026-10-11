@@ -10,7 +10,7 @@ const apiClient = axios.create({
 })
 
 apiClient.interceptors.request.use((config) => {
-    const token = sessionStorage.getItem('kd5f_token')
+    const token = localStorage.getItem('kd5f_token')
     if (token) {
         config.headers.Authorization = `Bearer ${token}`
     }
