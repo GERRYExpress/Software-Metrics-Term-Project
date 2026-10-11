@@ -71,6 +71,7 @@ export interface Hardware {
 export interface Media {
     id: number
     mediaUrl: string
+    type: 'image' | 'video'
 }
 
 export interface Wishlist {
