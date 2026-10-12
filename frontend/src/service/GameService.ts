@@ -17,8 +17,8 @@ export default {
     getGame(id: number) {
         return apiClient.get('/api/v1/games/' + id)
     },
-    getGamesBySeller(userId: number) {
-        return apiClient.get('/api/v1/games?sellerId=' + userId)
+    getGamesBySeller(userId: number, perPage = 6, page = 1) {
+        return apiClient.get(`/api/v1/games?sellerId=${userId}&_limit=${perPage}&_page=${page}`)
     },
     createGame(input: GameInput) {
         return apiClient.post<GameDetail>('/api/v1/games', toGameCreateRequest(input))
@@ -33,7 +33,7 @@ export default {
 
 function toGameCreateRequest(input: GameInput): GameCreateRequest {
     return {
-        accountId: input.userId,
+        userId: input.userId,
         releaseDate: input.releaseDate,
         categoryIds: input.categoryIds,
         name: input.name,
