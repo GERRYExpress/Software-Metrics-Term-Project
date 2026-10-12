@@ -21,7 +21,7 @@ const inWishlist = computed(() => (id.value ? userActionStore.isInWishlist(id.va
 
 const formattedCategories = computed(() => {
     if (categories.value) {
-        return categories.value.map(category => category.name)
+        return (categories.value.map(category => category.name)).join(', ')
     }
     return []
 })
@@ -48,13 +48,13 @@ const handleWishlistAction = () => {
 
 <template>
     <ProductMainContainer>
-        <AppCard class="grid grid-cols-2 pt-7.5 gap-x-5 relative">
-            <RouterLink class="absolute top-1 left-5" @click="$router.go(-1)" to="">Back</RouterLink>
+        <AppCard class="grid grid-cols-2 pt-10 gap-x-5 relative">
+            <RouterLink class="absolute top-2 left-5" @click="$router.go(-1)" to="">Back</RouterLink>
             <Image class="rounded-xl w-full" layout="constrained" :src="posterUrl"/>
             <div class="flex flex-col place-self-start h-full gap-y-2">
                 <h2>{{ name }}</h2>
                 <h3>Published on <b>{{ formattedDate ?? 'XXXXXXX' }}</b> by <b>{{ account?.username ?? 'USER' }}</b></h3>
-                <h3><span v-for="category in formattedCategories" :key="category">{{ category + ' ' }}</span></h3>
+                <h3 class="font-thin!">{{ formattedCategories }}</h3>
                 <h2 class="mt-auto text-end">${{ Number(price || 0).toFixed(2) }}</h2>
                 <div class="flex gap-x-2.5 w-full">
                     <!-- Add to Cart Button -->
