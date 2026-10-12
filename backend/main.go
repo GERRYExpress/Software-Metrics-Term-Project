@@ -77,6 +77,7 @@ func CreateGameEndpoint(r *gin.RouterGroup) {
 	handler := &handler.GameHandler{Service: service}
 	r.GET("", handler.GetGames)
 	r.POST("", handler.Create)
+	r.PUT("/:id", handler.Update)
 	r.GET("/:id", handler.GetGame)
 }
 

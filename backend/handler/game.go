@@ -1,9 +1,11 @@
 package handler
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"software-metrics-project/model"
+	"software-metrics-project/repository"
 	"software-metrics-project/service"
 	"strconv"
 	"strings"
@@ -71,6 +73,35 @@ func (h *GameHandler) Create(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusCreated, newGameResponse(*created))
+}
+
+func (h *GameHandler) Update(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil || id < 1 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "id must be a positive integer"})
+		return
+	}
+	var request GameCreateRequest
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if request.AccountID < 1 || strings.TrimSpace(request.Name) == "" ||
+		strings.TrimSpace(request.Description) == "" ||
+		request.Price < 0 || strings.TrimSpace(request.PosterURL) == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid game details"})
+		return
+	}
+	updated, err := h.Service.Update(id, request.toModel())
+	if err != nil {
+		if errors.Is(err, repository.ErrGameNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "game not found"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, newGameResponse(*updated))
 }
 
 func (r GameCreateRequest) toModel() model.GameDetail {
