@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 900" role="img" aria-labelledby="title">
+  <title>Game poster unavailable</title>
+  <rect width="640" height="900" fill="#252525"/>
+  <path d="M160 650h320M210 570h220M250 490h140" stroke="#b7ef00" stroke-width="24" stroke-linecap="round"/>
+  <text x="320" y="760" fill="#fff" font-family="sans-serif" font-size="32" text-anchor="middle">Image unavailable</text>
+</svg>
