@@ -15,6 +15,7 @@ type GameRepository interface {
 	GetGame(int) (*model.GameDetail, error)
 	Create(model.GameDetail) (*model.GameDetail, error)
 	Update(int, model.GameDetail) (*model.GameDetail, error)
+	Delete(int, int) error
 }
 
 func (s *GameService) GetGamesCount(keyword, category string, sellerID *int) (int, error) {
@@ -39,4 +40,8 @@ func (s *GameService) Create(game model.GameDetail) (*model.GameDetail, error) {
 
 func (s *GameService) Update(id int, game model.GameDetail) (*model.GameDetail, error) {
 	return s.Repo.Update(id, game)
+}
+
+func (s *GameService) Delete(id, userID int) error {
+	return s.Repo.Delete(id, userID)
 }

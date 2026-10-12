@@ -2,6 +2,7 @@ package repository
 
 import (
 	"database/sql"
+	"errors"
 	"slices"
 	"software-metrics-project/config"
 	"software-metrics-project/model"
@@ -15,6 +16,7 @@ type GameRepository struct {
 }
 
 var ErrGameNotFound = sql.ErrNoRows
+var ErrGameNotOwned = errors.New("game is not owned by user")
 
 const (
 	productIDField       = "product_id"
@@ -435,6 +437,34 @@ func (r *GameRepository) Update(id int, game model.GameDetail) (*model.GameDetai
 	updated.HardwareRequirement = game.HardwareRequirement
 	updated.Media = game.Media
 	return &updated, nil
+}
+
+func (r *GameRepository) Delete(id, userID int) error {
+	result, err := config.DB.Exec(
+		"DELETE FROM products WHERE product_id = ? AND user_id = ?",
+		id, userID,
+	)
+	if err != nil {
+		return err
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if affected == 0 {
+		var exists bool
+		if err := config.DB.QueryRow(
+			"SELECT EXISTS (SELECT 1 FROM products WHERE product_id = ?)",
+			id,
+		).Scan(&exists); err != nil {
+			return err
+		}
+		if !exists {
+			return ErrGameNotFound
+		}
+		return ErrGameNotOwned
+	}
+	return nil
 }
 
 func insertGameRelations(tx *sql.Tx, productID int64, game model.GameDetail) error {

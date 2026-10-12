@@ -18,7 +18,7 @@ type GameHandler struct {
 }
 
 type GameCreateRequest struct {
-	AccountID            int                     `json:"accountId"`
+	UserID               int                     `json:"userId"`
 	ReleaseDate          model.ReleaseDate       `json:"releaseDate"`
 	CategoryIDs          []int                   `json:"categoryIds"`
 	Name                 string                  `json:"name"`
@@ -61,7 +61,7 @@ func (h *GameHandler) Create(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	if request.AccountID < 1 || strings.TrimSpace(request.Name) == "" ||
+	if request.UserID < 1 || strings.TrimSpace(request.Name) == "" ||
 		strings.TrimSpace(request.Description) == "" ||
 		request.Price < 0 || strings.TrimSpace(request.PosterURL) == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid game details"})
@@ -86,7 +86,7 @@ func (h *GameHandler) Update(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	if request.AccountID < 1 || strings.TrimSpace(request.Name) == "" ||
+	if request.UserID < 1 || strings.TrimSpace(request.Name) == "" ||
 		strings.TrimSpace(request.Description) == "" ||
 		request.Price < 0 || strings.TrimSpace(request.PosterURL) == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid game details"})
@@ -102,6 +102,31 @@ func (h *GameHandler) Update(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, newGameResponse(*updated))
+}
+
+func (h *GameHandler) Delete(c *gin.Context) {
+	id, err := positiveID(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	userID, err := positiveID(c.Query("userId"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "userId must be a positive integer"})
+		return
+	}
+	if err := h.Service.Delete(id, userID); err != nil {
+		switch {
+		case errors.Is(err, repository.ErrGameNotFound):
+			c.JSON(http.StatusNotFound, gin.H{"error": "game not found"})
+		case errors.Is(err, repository.ErrGameNotOwned):
+			c.JSON(http.StatusForbidden, gin.H{"error": "you do not own this game"})
+		default:
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
+		return
+	}
+	c.Status(http.StatusNoContent)
 }
 
 func (r GameCreateRequest) toModel() model.GameDetail {
@@ -127,7 +152,7 @@ func (r GameCreateRequest) toModel() model.GameDetail {
 		Categories:  categories,
 		Name:        model.NewName(r.Name), Description: model.NewDescription(r.Description),
 		Price: model.NewPrice(r.Price), PosterUrl: model.NewPosterURL(r.PosterURL),
-		Account:             model.NewAccount(r.AccountID, ""),
+		Account:             model.NewAccount(r.UserID, ""),
 		HardwareRequirement: requirements, Media: media,
 	}
 }

@@ -101,8 +101,8 @@ export interface GameInput {
 }
 
 export interface GameCreateRequest {
-    accountId: number
-    releaseDate: string
+    userId: number
+    releaseDate: Date
     categoryIds: number[]
     name: string
     description: string
