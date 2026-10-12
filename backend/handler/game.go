@@ -6,12 +6,108 @@ import (
 	"software-metrics-project/model"
 	"software-metrics-project/service"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
 
 type GameHandler struct {
 	Service *service.GameService
+}
+
+type GameCreateRequest struct {
+	AccountID            int                     `json:"accountId"`
+	ReleaseDate          model.ReleaseDate       `json:"releaseDate"`
+	CategoryIDs          []int                   `json:"categoryIds"`
+	Name                 string                  `json:"name"`
+	Description          string                  `json:"description"`
+	Price                float64                 `json:"price"`
+	PosterURL            string                  `json:"posterUrl"`
+	HardwareRequirements []HardwareCreateRequest `json:"hardwareRequirements"`
+	MediaURLs            []string                `json:"mediaUrls"`
+}
+
+type HardwareCreateRequest struct {
+	OS             string `json:"operatingSystem"`
+	Processor      string `json:"processor"`
+	Memory         string `json:"memory"`
+	GraphicsCard   string `json:"graphicsCard"`
+	DirectXVersion string `json:"directXVersion"`
+	Network        string `json:"network"`
+	Storage        string `json:"storage"`
+	Soundcard      string `json:"soundcard"`
+	AdditionalNote string `json:"additionalNote"`
+	Type           string `json:"type"`
+}
+
+type GameResponse struct {
+	ID                  model.ID          `json:"id"`
+	ReleaseDate         model.ReleaseDate `json:"releaseDate"`
+	Categories          []model.Category  `json:"categories"`
+	Name                model.Name        `json:"name"`
+	Description         model.Description `json:"description"`
+	Price               model.Price       `json:"price"`
+	PosterURL           model.PosterURL   `json:"posterUrl"`
+	Account             model.Account     `json:"account"`
+	HardwareRequirement []model.Hardware  `json:"hardwareRequirement"`
+	Media               []model.Media     `json:"media"`
+}
+
+func (h *GameHandler) Create(c *gin.Context) {
+	var request GameCreateRequest
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if request.AccountID < 1 || strings.TrimSpace(request.Name) == "" ||
+		strings.TrimSpace(request.Description) == "" ||
+		request.Price < 0 || strings.TrimSpace(request.PosterURL) == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid game details"})
+		return
+	}
+	created, err := h.Service.Create(request.toModel())
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusCreated, newGameResponse(*created))
+}
+
+func (r GameCreateRequest) toModel() model.GameDetail {
+	categories := make([]model.Category, 0, len(r.CategoryIDs))
+	for _, id := range r.CategoryIDs {
+		categories = append(categories, model.NewCategory(id, "", false))
+	}
+	requirements := make([]model.Hardware, 0, len(r.HardwareRequirements))
+	for _, requirement := range r.HardwareRequirements {
+		requirements = append(requirements, model.NewHardware(model.HardwareData{
+			OS: requirement.OS, Processor: requirement.Processor, Memory: requirement.Memory,
+			GraphicsCard: requirement.GraphicsCard, DirectXVersion: requirement.DirectXVersion,
+			Network: requirement.Network, Storage: requirement.Storage, Soundcard: requirement.Soundcard,
+			AdditionalNote: requirement.AdditionalNote, Type: requirement.Type,
+		}))
+	}
+	media := make([]model.Media, 0, len(r.MediaURLs))
+	for _, url := range r.MediaURLs {
+		media = append(media, model.NewMedia(0, url))
+	}
+	return model.GameDetail{
+		ReleaseDate: r.ReleaseDate,
+		Categories:  categories,
+		Name:        model.NewName(r.Name), Description: model.NewDescription(r.Description),
+		Price: model.NewPrice(r.Price), PosterUrl: model.NewPosterURL(r.PosterURL),
+		Account:             model.NewAccount(r.AccountID, ""),
+		HardwareRequirement: requirements, Media: media,
+	}
+}
+
+func newGameResponse(game model.GameDetail) GameResponse {
+	return GameResponse{
+		ID: game.ID, ReleaseDate: game.ReleaseDate, Categories: game.Categories,
+		Name: game.Name, Description: game.Description, Price: game.Price,
+		PosterURL: game.PosterUrl, Account: game.Account,
+		HardwareRequirement: game.HardwareRequirement, Media: game.Media,
+	}
 }
 
 func (h *GameHandler) GetGames(c *gin.Context) {

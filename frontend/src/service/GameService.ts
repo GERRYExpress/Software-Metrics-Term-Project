@@ -1,5 +1,5 @@
 import apiClient from "./AxiosClient"
-import type { GameInput } from "@/types"
+import type { GameDetail, GameInput, GameCreateRequest } from "@/types"
 
 export default {
     getGames(perPage: number, page: number) {
@@ -21,12 +21,26 @@ export default {
         return apiClient.get('/api/v1/games?sellerId=' + userId)
     },
     createGame(input: GameInput) {
-        return apiClient.post('/api/v1/games', input)
+        return apiClient.post<GameDetail>('/api/v1/games', toGameCreateRequest(input))
     },
     updateGame(id: number, input: GameInput) {
         return apiClient.put('/api/v1/games/' + id, input)
     },
     deleteGame(id: number, userId: number) {
         return apiClient.delete(`/api/v1/games/${id}?userId=${userId}`)
+    }
+}
+
+function toGameCreateRequest(input: GameInput): GameCreateRequest {
+    return {
+        accountId: input.userId,
+        releaseDate: input.releaseDate,
+        categoryIds: input.categoryIds,
+        name: input.name,
+        description: input.description,
+        price: input.price,
+        posterUrl: input.posterUrl,
+        hardwareRequirements: input.hardwareRequirements,
+        mediaUrls: input.mediaUrls
     }
 }

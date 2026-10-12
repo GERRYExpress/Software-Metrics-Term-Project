@@ -2,11 +2,18 @@ package service
 
 import (
 	"software-metrics-project/model"
-	"software-metrics-project/repository"
 )
 
 type GameService struct {
-	Repo *repository.GameRepository
+	Repo GameRepository
+}
+
+type GameRepository interface {
+	GetGamesCount(string, string, *int) (int, error)
+	GetGames(string, *int, int, int) ([]model.Game, error)
+	GetGamesByName(string, string, *int, int, int) ([]model.Game, error)
+	GetGame(int) (*model.GameDetail, error)
+	Create(model.GameDetail) (*model.GameDetail, error)
 }
 
 func (s *GameService) GetGamesCount(keyword, category string, sellerID *int) (int, error) {
@@ -23,4 +30,8 @@ func (s *GameService) GetGamesByName(keyword, category string, sellerID *int, li
 
 func (s *GameService) GetGame(id int) (*model.GameDetail, error) {
 	return s.Repo.GetGame(id)
+}
+
+func (s *GameService) Create(game model.GameDetail) (*model.GameDetail, error) {
+	return s.Repo.Create(game)
 }

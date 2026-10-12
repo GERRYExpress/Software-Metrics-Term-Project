@@ -338,3 +338,75 @@ func (r *GameRepository) GetGame(id int) (*model.GameDetail, error) {
 	slices.Reverse(output.Media)
 	return &output, nil
 }
+
+func (r *GameRepository) Create(game model.GameDetail) (*model.GameDetail, error) {
+	tx, err := config.DB.Begin()
+	if err != nil {
+		return nil, err
+	}
+	columns := []string{"name", "description", "price", "poster_url", "user_id"}
+	values := []any{game.Name, game.Description, game.Price, game.PosterUrl, game.Account.ID}
+	if !time.Time(game.ReleaseDate).IsZero() {
+		columns = append(columns, "release_date")
+		values = append(values, time.Time(game.ReleaseDate))
+	}
+	insert := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Question).
+		Insert("products").
+		Columns(columns...).
+		Values(values...)
+	query, args, err := insert.ToSql()
+	if err != nil {
+		return nil, err
+	}
+	result, err := tx.Exec(query, args...)
+	if err != nil {
+		_ = tx.Rollback()
+		return nil, err
+	}
+	id, err := result.LastInsertId()
+	if err != nil {
+		_ = tx.Rollback()
+		return nil, err
+	}
+
+	for _, category := range game.Categories {
+		if _, err := tx.Exec("INSERT INTO product_categories (product_id, category_id) VALUES (?, ?)", id, category.ID); err != nil {
+			_ = tx.Rollback()
+			return nil, err
+		}
+	}
+	for _, requirement := range game.HardwareRequirement {
+		if _, err := tx.Exec(`INSERT INTO hardware_requirement
+			(operating_system, processor, memory, graphics_card, directx_version, network, storage, soundcard, additional_note, type, product_id)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+			requirement.OS, requirement.Processor, requirement.Memory, requirement.GraphicsCard,
+			requirement.DirectXVersion, requirement.Network, requirement.Storage, requirement.Soundcard,
+			requirement.AdditionalNote, requirement.Type, id,
+		); err != nil {
+			_ = tx.Rollback()
+			return nil, err
+		}
+	}
+	mediaSeen := make(map[string]struct{}, len(game.Media))
+	for _, media := range game.Media {
+		url := string(media.MediaUrl)
+		if _, exists := mediaSeen[url]; exists {
+			continue
+		}
+		mediaSeen[url] = struct{}{}
+		if _, err := tx.Exec("INSERT INTO media (media_url, product_id) VALUES (?, ?)", media.MediaUrl, id); err != nil {
+			_ = tx.Rollback()
+			return nil, err
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+
+	created := model.NewGameDetail(int(id), string(game.Name), string(game.Description), float64(game.Price), string(game.PosterUrl), time.Time(game.ReleaseDate))
+	created.Account = game.Account
+	created.Categories = game.Categories
+	created.HardwareRequirement = game.HardwareRequirement
+	created.Media = game.Media
+	return &created, nil
+}

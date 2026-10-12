@@ -100,6 +100,18 @@ export interface GameInput {
     mediaUrls: string[]
 }
 
+export interface GameCreateRequest {
+    accountId: number
+    releaseDate: string
+    categoryIds: number[]
+    name: string
+    description: string
+    price: number
+    posterUrl: string
+    hardwareRequirements: HardwareInput[]
+    mediaUrls: string[]
+}
+
 export interface HardwareInput {
     operatingSystem: string
     processor: string
