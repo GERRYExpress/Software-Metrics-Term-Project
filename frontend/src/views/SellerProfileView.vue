@@ -66,17 +66,13 @@ function getErrorMessage(error: unknown, fallback: string) {
 </script>
 
 <template>
-    <ProductMainContainer class="mx-auto flex w-2xl *:w-full flex-col gap-y-6 px-4 md:px-8">
-        <div>
-            <p class="text-action font-bold uppercase tracking-widest">Seller center</p>
-            <h1>Seller profile</h1>
-        </div>
-
+    <ProductMainContainer class="mx-auto flex w-2xl *:w-full flex-col px-4 md:px-8">
+        <h1>Profile</h1>
         <div v-if="errorMessage" class="rounded-xl border border-red/60 bg-red/10 p-4 text-red-100" role="alert">
             {{ errorMessage }}
         </div>
 
-        <AppCard v-if="sellerStore.account" class="w-full gap-y-4!">
+        <AppCard v-if="sellerStore.account" class="w-full *:w-full gap-y-4!">
             <div class="flex flex-wrap items-center gap-5">
                 <div class="flex size-24 items-center justify-center rounded-full bg-action text-4xl font-bold text-tertiary">
                     {{ sellerStore.account.username.charAt(0).toUpperCase() }}

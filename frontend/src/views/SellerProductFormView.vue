@@ -194,9 +194,6 @@ function getErrorMessage(error: unknown, fallback: string) {
                 <h1>{{ pageTitle }}</h1>
                 <p class="text-white/70">Keep your storefront information complete and accurate.</p>
             </div>
-            <button type="button" class="rounded-lg bg-secondary px-4 py-2 font-bold cursor-pointer" @click="router.push({ name: 'seller-dashboard-view' })">
-                Cancel
-            </button>
         </div>
 
         <div v-if="errorMessage" class="rounded-xl border border-red/60 bg-red/10 p-4 text-red-100" role="alert">
@@ -265,9 +262,14 @@ function getErrorMessage(error: unknown, fallback: string) {
                 </div>
             </AppCard>
 
-            <BaseButton :disabled="isSaving" type="action">
-                {{ isSaving ? 'Saving...' : isEditMode ? 'Save changes' : 'Create product' }}
-            </BaseButton>
+            <div class="flex flex-row gap-x-5">
+                <BaseButton type="danger" class="w-1/2!" @click="router.push({ name: 'seller-dashboard-view' })">
+                    Cancel
+                </BaseButton>
+                <BaseButton class="w-1/2!" :disabled="isSaving" type="action">
+                    {{ isSaving ? 'Saving...' : isEditMode ? 'Save changes' : 'Create product' }}
+                </BaseButton>
+            </div>
         </form>
     </ProductMainContainer>
 </template>
