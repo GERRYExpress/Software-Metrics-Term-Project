@@ -3,15 +3,21 @@ package service
 import (
 	"software-metrics-project/auth"
 	"software-metrics-project/model"
-	"software-metrics-project/repository"
 )
 
 type AccountService struct {
-	Repo *repository.AccountRepository
+	Repo AccountRepository
 }
 
-func (r *AccountService) GetAccounts() ([]model.Account, error) {
-	return r.Repo.GetAccounts()
+type AccountRepository interface {
+	GetAccounts() ([]model.Account, error)
+	Authenticate(string, string) (model.Account, error)
+	Create(string, string) (model.Account, error)
+	Delete(int) error
+}
+
+func (s *AccountService) GetAccounts() ([]model.Account, error) {
+	return s.Repo.GetAccounts()
 }
 
 func (s *AccountService) Login(username, password string) (string, *model.Account, error) {
@@ -28,4 +34,12 @@ func (s *AccountService) Login(username, password string) (string, *model.Accoun
 
 func (s *AccountService) Register(username, password string) (model.Account, error) {
 	return s.Repo.Create(username, password)
+}
+
+func (s *AccountService) Create(username, password string) (model.Account, error) {
+	return s.Repo.Create(username, password)
+}
+
+func (s *AccountService) Delete(userID int) error {
+	return s.Repo.Delete(userID)
 }

@@ -66,7 +66,8 @@ func CreateAccountEndpoint(r *gin.RouterGroup) {
 	service := &service.AccountService{Repo: repo}
 	handler := &handler.AccountHandler{Service: service}
 	r.GET("", handler.GetAccounts)
-	r.POST("", handler.Register)
+	r.POST("", handler.Create)
+	r.DELETE("/:id", handler.Delete)
 	r.POST("/login", handler.Login)
 }
 

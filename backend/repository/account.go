@@ -16,6 +16,7 @@ type AccountRepository struct {
 }
 
 var ErrInvalidCredentials = errors.New("invalid credentials")
+var ErrAccountHasGames = errors.New("account owns games")
 
 func (r *AccountRepository) GetAccounts() ([]model.Account, error) {
 	query, args, err := squirrel.
@@ -94,4 +95,30 @@ func (r *AccountRepository) Create(username, password string) (model.Account, er
 		return model.Account{}, err
 	}
 	return model.NewAccount(int(id), username), nil
+}
+
+func (r *AccountRepository) Delete(userID int) error {
+	var ownsGames bool
+	if err := config.DB.QueryRow(
+		"SELECT EXISTS (SELECT 1 FROM products WHERE user_id = ?)",
+		userID,
+	).Scan(&ownsGames); err != nil {
+		return err
+	}
+	if ownsGames {
+		return ErrAccountHasGames
+	}
+
+	result, err := config.DB.Exec("DELETE FROM accounts WHERE user_id = ?", userID)
+	if err != nil {
+		return err
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if affected == 0 {
+		return sql.ErrNoRows
+	}
+	return nil
 }
