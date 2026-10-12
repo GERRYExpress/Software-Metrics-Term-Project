@@ -9,7 +9,7 @@ import GameService from '@/service/GameService'
 import { useSellerStore } from '@/stores/seller'
 import { useUserActionStore } from '@/stores/userAction'
 import type { Category, GameDetail, GameInput, Hardware, HardwareInput } from '@/types'
-import { computed, onMounted, ref } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 const route = useRoute()
@@ -20,6 +20,7 @@ const categories = ref<Category[]>([])
 const isLoading = ref(true)
 const isSaving = ref(false)
 const errorMessage = ref('')
+const errorBanner = ref<HTMLElement | null>(null)
 
 const form = ref<GameInput>(createEmptyForm())
 const selectedCategoryIds = ref<number[]>([])
@@ -36,6 +37,12 @@ const isEditMode = computed(() => productId.value !== null)
 const pageTitle = computed(() => isEditMode.value ? 'Edit product' : 'Add product')
 
 onMounted(loadForm)
+watch(errorMessage, async message => {
+    if (message) {
+        await nextTick()
+        errorBanner.value?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
+})
 
 async function loadForm() {
     isLoading.value = true
@@ -196,7 +203,7 @@ function getErrorMessage(error: unknown, fallback: string) {
             </div>
         </div>
 
-        <div v-if="errorMessage" class="rounded-xl border border-red/60 bg-red/10 p-4 text-red-100" role="alert">
+        <div v-if="errorMessage" ref="errorBanner" class="rounded-xl border border-red/60 bg-red/10 p-4 text-red-100" role="alert">
             {{ errorMessage }}
         </div>
 
