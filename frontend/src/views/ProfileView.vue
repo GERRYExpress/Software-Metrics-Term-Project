@@ -5,30 +5,13 @@ import ProductMainContainer from '@/components/ProductMainContainer.vue';
 import AccountService from '@/service/AccountService';
 import { useUserActionStore } from '@/stores/userAction';
 import { useAuthStore } from '@/stores/auth';
-import type { Account } from '@/types';
-import { computed, onMounted, ref } from 'vue';
+import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
 
 const router = useRouter()
-const account = ref<Account | null>(null)
-const showDeleteModal = ref(false)
-const isLoading = ref(true)
 const authStore = useAuthStore()
-
-onMounted(() => {
-    AccountService.getAccounts()
-        .then(res => {
-            if (Array.isArray(res.data)) {
-                account.value = res.data.find(item => item.id === authStore.account?.id) ?? null
-            }
-        })
-        .catch(err => {
-            console.error('Failed to load profile account:', err)
-        })
-        .finally(() => {
-            isLoading.value = false
-        })
-})
+const account = computed(() => authStore.account)
+const showDeleteModal = ref(false)
 
 const formattedCreatedDate = computed(() => {
     if (!account.value?.createdDate) return '-'
