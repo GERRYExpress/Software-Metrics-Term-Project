@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const modelValue = defineModel<string | number>()
+const modelValue = defineModel<string | number | Date>()
 interface BaseInputProps {
     label?: string,
     placeholder?: string,

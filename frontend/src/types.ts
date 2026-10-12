@@ -92,7 +92,7 @@ export interface GameInput {
     userId: number
     name: string
     description: string
-    releaseDate: string
+    releaseDate: Date
     price: number
     posterUrl: string
     categoryIds: number[]
