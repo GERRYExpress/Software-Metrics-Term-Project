@@ -9,15 +9,14 @@ import { useAuthStore } from '@/stores/auth';
 import type { LoginForm } from '@/types';
 import { UserRound } from '@lucide/vue';
 import { ref } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import { useRouter } from 'vue-router';
 const router = useRouter()
-const route = useRoute()
 const authStore = useAuthStore()
 const loginOptions = ['Buyer', 'Seller']
 const credential = ref<LoginForm>({
     username: '',
     password: '',
-    isSeller: route.query.role === 'true'
+    isSeller: false
 })
 const errorMessage = ref('')
 const isLoading = ref(false)
@@ -32,20 +31,15 @@ const toggleRole = () => {
 const handleLogin = async () => {
     errorMessage.value = ''
     isLoading.value = true
-    try {
-        const response = await AccountService.authenticate(credential.value)
-        authStore.setSession(response.data.account, response.data.token)
-        const redirect = typeof route.query.redirect === 'string' && route.query.redirect.startsWith('/')
-            ? route.query.redirect
-            : null
-        await router.push(redirect ?? {
-            name: credential.value.isSeller ? 'seller-dashboard-view' : 'landing-page-view'
+    AccountService.authenticate(credential.value)
+        .then(res => {
+            authStore.setSession(res.data.account, res.data.token)
+            router.push({
+                name: credential.value.isSeller ? 'seller-dashboard-view' : 'landing-page-view'
+            })
         })
-    } catch (error) {
-        errorMessage.value = getErrorMessage(error)
-    } finally {
-        isLoading.value = false
-    }
+        .catch(err => errorMessage.value = getErrorMessage(err))
+        .finally(() => isLoading.value = false)
 }
 
 function getErrorMessage(error: unknown) {
