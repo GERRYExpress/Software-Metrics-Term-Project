@@ -66,7 +66,7 @@ function getErrorMessage(error: unknown, fallback: string) {
 </script>
 
 <template>
-    <ProductMainContainer class="mx-auto flex w-full max-w-4xl flex-col gap-y-6 px-4 md:px-8">
+    <ProductMainContainer class="mx-auto flex w-2xl *:w-full flex-col gap-y-6 px-4 md:px-8">
         <div>
             <p class="text-action font-bold uppercase tracking-widest">Seller center</p>
             <h1>Seller profile</h1>

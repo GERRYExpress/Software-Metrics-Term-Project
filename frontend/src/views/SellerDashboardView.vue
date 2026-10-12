@@ -151,8 +151,8 @@ function getErrorMessage(error: unknown, fallback: string) {
 </script>
 
 <template>
-    <ProductMainContainer class="mx-auto flex w-full max-w-6xl flex-col gap-y-6 px-4 md:px-8">
-        <div class="flex flex-wrap items-end justify-between gap-3">
+    <ProductMainContainer class="mx-auto flex w-2xl *:w-full flex-col gap-y-6">
+        <div class="flex flex-row items-end justify-between">
             <div>
                 <p class="text-action font-bold uppercase tracking-widest">Seller center</p>
                 <h1>Dashboard</h1>
@@ -173,16 +173,16 @@ function getErrorMessage(error: unknown, fallback: string) {
         </div>
 
         <template v-else>
-            <AppCard class="w-full gap-y-4!">
-                <div class="flex flex-wrap items-center justify-between gap-3">
-                    <div>
+            <AppCard class="w-2xl gap-y-4!">
+                <div class="flex flex-col w-full items-center justify-between gap-3">
+                    <div class="w-full">
                         <h2 class="text-2xl">Categories</h2>
                         <p class="text-sm text-white/60">Control which categories buyers can see.</p>
                     </div>
-                    <form class="flex w-full max-w-md gap-2" @submit.prevent="addCategory">
-                        <BaseInput v-model="newCategoryName" aria-label="New category name" placeholder="New category name"/>
+                    <form class="flex w-full gap-2" @submit.prevent="addCategory">
+                        <BaseInput class="w-full!" v-model="newCategoryName" aria-label="New category name" placeholder="New category name"/>
                         <BaseButton class="w-auto!" :disabled="isSavingCategory">
-                            <Plus class="mr-1 size-4"/>
+                            <Plus class="size-5"/>
                             Add
                         </BaseButton>
                     </form>
@@ -202,7 +202,7 @@ function getErrorMessage(error: unknown, fallback: string) {
                     />
             </AppCard>
 
-            <AppCard class="w-full gap-y-4!">
+            <AppCard class="gap-y-4!">
                 <div class="flex flex-wrap items-center justify-between gap-3">
                     <div>
                         <h2 class="text-2xl">Your products</h2>

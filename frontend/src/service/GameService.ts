@@ -24,7 +24,7 @@ export default {
         return apiClient.post<GameDetail>('/api/v1/games', toGameCreateRequest(input))
     },
     updateGame(id: number, input: GameInput) {
-        return apiClient.put('/api/v1/games/' + id, input)
+        return apiClient.put<GameDetail>('/api/v1/games/' + id, toGameCreateRequest(input))
     },
     deleteGame(id: number, userId: number) {
         return apiClient.delete(`/api/v1/games/${id}?userId=${userId}`)
