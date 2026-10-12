@@ -78,6 +78,7 @@ func CreateGameEndpoint(r *gin.RouterGroup) {
 	r.GET("", handler.GetGames)
 	r.POST("", handler.Create)
 	r.PUT("/:id", handler.Update)
+	r.DELETE("/:id", handler.Delete)
 	r.GET("/:id", handler.GetGame)
 }
 
@@ -87,6 +88,7 @@ func CreateCategoryEndpoint(r *gin.RouterGroup) {
 	handler := &handler.CategoryHandler{Service: service}
 	r.GET("", handler.GetCategories)
 	r.POST("", handler.Create)
+	r.PUT("/:id", handler.Update)
 }
 
 func CreateWishlistEndpoint(r *gin.RouterGroup) {

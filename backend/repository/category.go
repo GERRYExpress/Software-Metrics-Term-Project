@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"database/sql"
 	"software-metrics-project/config"
 	"software-metrics-project/model"
 
@@ -62,4 +63,22 @@ func (r *CategoryRepository) Create(name string) (model.Category, error) {
 	}
 
 	return model.NewCategory(int(id), name, false), nil
+}
+
+func (r *CategoryRepository) Update(id int, name string, isHidden bool) (model.Category, error) {
+	result, err := config.DB.Exec(
+		"UPDATE categories SET name = ?, is_hidden = ? WHERE category_id = ?",
+		name, isHidden, id,
+	)
+	if err != nil {
+		return model.Category{}, err
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return model.Category{}, err
+	}
+	if affected == 0 {
+		return model.Category{}, sql.ErrNoRows
+	}
+	return model.NewCategory(id, name, isHidden), nil
 }
