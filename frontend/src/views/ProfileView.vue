@@ -63,7 +63,7 @@ const confirmDeleteAccount = () => {
                 <p>${{ Number(account?.totalSpend || 0).toFixed(2) }}</p>
                 <p>{{ account?.totalGame || 0 }}</p>
             </div>
-            <img src="https://picsum.photos/128" alt="Profile avatar" class="rounded-lg object-cover w-32 h-32"/>
+            <img src="/placeholder-profile.svg" alt="Profile avatar placeholder" class="rounded-lg object-cover w-32 h-32"/>
         </AppCard>
         <div class="w-2xl flex flex-row gap-x-3">
             <BaseButton @click="handleLogout" type="neutral">Logout</BaseButton>
