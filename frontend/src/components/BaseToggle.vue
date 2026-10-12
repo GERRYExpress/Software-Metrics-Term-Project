@@ -24,8 +24,8 @@ const buttonClass = 'w-full text-center transition-all select-none p-2 font-medi
 
 const selectionClass = computed(() =>{
     return {
-        first: modelValue.value ? 'bg-action text-tertiary scale-115 -translate-x-1' : 'bg-gray-100 text-gray-300',
-        second: !modelValue.value ? 'bg-action text-tertiary scale-115 translate-x-1' : 'bg-gray-100 text-gray-300'
+        first: !modelValue.value ? 'bg-action text-tertiary scale-115 -translate-x-1' : 'bg-gray-100 text-gray-300',
+        second: modelValue.value ? 'bg-action text-tertiary scale-115 translate-x-1' : 'bg-gray-100 text-gray-300'
 }
 }) 
 </script>
