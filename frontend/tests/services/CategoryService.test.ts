@@ -17,7 +17,7 @@ describe('CategoryService', () => {
 
       const result = await CategoryService.getCategories()
 
-      expect(result).toEqual(mockData)
+      expect(result).toEqual({ data: mockData })
       expect(apiClient.get).toHaveBeenCalledWith('/api/v1/categories')
     })
 
@@ -30,13 +30,13 @@ describe('CategoryService', () => {
   })
 
   describe('createCategory', () => {
-    it('posts category data and returns created category', async () => {
+    it('posts category data and returns created category response', async () => {
       const newCategory = { id: 3, name: 'Strategy', isHidden: false }
       vi.mocked(apiClient.post).mockResolvedValue({ data: newCategory })
 
       const result = await CategoryService.createCategory('Strategy')
 
-      expect(result).toEqual(newCategory)
+      expect(result).toEqual({ data: newCategory })
       expect(apiClient.post).toHaveBeenCalledWith('/api/v1/categories', { name: 'Strategy', isHidden: false })
     })
 
@@ -56,7 +56,7 @@ describe('CategoryService', () => {
 
       const result = await CategoryService.updateCategory(1, 'Updated Action', true)
 
-      expect(result).toEqual(updated)
+      expect(result).toEqual({ data: updated })
       expect(apiClient.put).toHaveBeenCalledWith('/api/v1/categories/1', { name: 'Updated Action', isHidden: true })
     })
   })

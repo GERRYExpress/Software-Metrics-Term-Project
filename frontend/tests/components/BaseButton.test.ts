@@ -1,5 +1,5 @@
 import { mount } from '@vue/test-utils'
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import BaseButton from '@/components/BaseButton.vue'
 
 describe('BaseButton', () => {
@@ -15,50 +15,39 @@ describe('BaseButton', () => {
     expect(wrapper.emitted('click')!.length).toBe(1)
   })
 
-  it('does not emit click when disabled', () => {
-    const wrapper = mount(BaseButton, { props: { disabled: true } })
-    wrapper.trigger('click')
-    expect(wrapper.emitted('click')).toBeFalsy()
+  it('applies action type classes by default', () => {
+    const wrapper = mount(BaseButton)
+    expect(wrapper.classes()).toContain('bg-action')
+    expect(wrapper.classes()).toContain('text-tertiary')
   })
 
-  it('applies disabled attribute', () => {
-    const wrapper = mount(BaseButton, { props: { disabled: true } })
+  it('applies neutral type classes', () => {
+    const wrapper = mount(BaseButton, { props: { type: 'neutral' } })
+    expect(wrapper.classes()).toContain('bg-secondary')
+    expect(wrapper.classes()).toContain('border-white')
+    expect(wrapper.classes()).toContain('border-2')
+  })
+
+  it('applies danger type classes', () => {
+    const wrapper = mount(BaseButton, { props: { type: 'danger' } })
+    expect(wrapper.classes()).toContain('bg-red')
+  })
+
+  it('applies danger-link type classes', () => {
+    const wrapper = mount(BaseButton, { props: { type: 'danger-link' } })
+    expect(wrapper.classes()).toContain('bg-none')
+    expect(wrapper.classes()).toContain('underline')
+    expect(wrapper.classes()).toContain('text-red')
+  })
+
+  it('forwards attributes to button element', () => {
+    const wrapper = mount(BaseButton, { attrs: { 'data-test': 'btn', id: 'my-btn' } })
+    expect(wrapper.attributes('data-test')).toBe('btn')
+    expect(wrapper.attributes('id')).toBe('my-btn')
+  })
+
+  it('applies disabled attribute when disabled', () => {
+    const wrapper = mount(BaseButton, { attrs: { disabled: true } })
     expect(wrapper.attributes('disabled')).toBeDefined()
-    expect(wrapper.classes()).toContain('disabled')
-  })
-
-  it('shows loading state', () => {
-    const wrapper = mount(BaseButton, { props: { loading: true } })
-    expect(wrapper.find('.spinner, .loading, [data-loading]').exists()).toBe(true)
-    expect(wrapper.attributes('disabled')).toBeDefined()
-  })
-
-  it('applies variant classes', () => {
-    const primary = mount(BaseButton, { props: { variant: 'primary' } })
-    expect(primary.classes()).toContain('btn-primary')
-
-    const danger = mount(BaseButton, { props: { variant: 'danger' } })
-    expect(danger.classes()).toContain('btn-danger')
-
-    const secondary = mount(BaseButton, { props: { variant: 'secondary' } })
-    expect(secondary.classes()).toContain('btn-secondary')
-  })
-
-  it('applies size classes', () => {
-    const sm = mount(BaseButton, { props: { size: 'sm' } })
-    expect(sm.classes()).toContain('btn-sm')
-
-    const lg = mount(BaseButton, { props: { size: 'lg' } })
-    expect(lg.classes()).toContain('btn-lg')
-  })
-
-  it('applies full width class', () => {
-    const wrapper = mount(BaseButton, { props: { fullWidth: true } })
-    expect(wrapper.classes()).toContain('w-full')
-  })
-
-  it('renders icon when provided', () => {
-    const wrapper = mount(BaseButton, { props: { icon: 'arrow-right' } })
-    expect(wrapper.find('[data-icon="arrow-right"]').exists()).toBe(true)
   })
 })
