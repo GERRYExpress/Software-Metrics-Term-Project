@@ -20,3 +20,7 @@ func (s *CategoryService) Create(name string) (model.Category, error) {
 func (s *CategoryService) Update(id int, name string, isHidden bool) (model.Category, error) {
 	return s.Repo.Update(id, name, isHidden)
 }
+
+func (s *CategoryService) Delete(id int) error {
+	return s.Repo.Delete(id)
+}

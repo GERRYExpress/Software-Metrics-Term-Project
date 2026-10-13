@@ -82,3 +82,21 @@ func (r *CategoryRepository) Update(id int, name string, isHidden bool) (model.C
 	}
 	return model.NewCategory(id, name, isHidden), nil
 }
+
+func (r *CategoryRepository) Delete(id int) error {
+	result, err := config.DB.Exec(
+		"DELETE FROM categories WHERE category_id = ?",
+		id,
+	)
+	if err != nil {
+		return err
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if affected == 0 {
+		return sql.ErrNoRows
+	}
+	return nil
+}

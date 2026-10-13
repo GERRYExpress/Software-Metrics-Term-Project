@@ -89,6 +89,7 @@ func CreateCategoryEndpoint(r *gin.RouterGroup) {
 	r.GET("", handler.GetCategories)
 	r.POST("", handler.Create)
 	r.PUT("/:id", handler.Update)
+	r.DELETE("/:id", handler.Delete)
 }
 
 func CreateWishlistEndpoint(r *gin.RouterGroup) {
