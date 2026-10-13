@@ -56,15 +56,8 @@ type GameResponse struct {
 }
 
 func (h *GameHandler) Create(c *gin.Context) {
-	var request GameCreateRequest
-	if err := c.ShouldBindJSON(&request); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-	if request.UserID < 1 || strings.TrimSpace(request.Name) == "" ||
-		strings.TrimSpace(request.Description) == "" ||
-		request.Price < 0 || strings.TrimSpace(request.PosterURL) == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid game details"})
+	request, ok := h.bindAndValidateGame(c)
+	if !ok {
 		return
 	}
 	created, err := h.Service.Create(request.toModel())
@@ -81,15 +74,8 @@ func (h *GameHandler) Update(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "id must be a positive integer"})
 		return
 	}
-	var request GameCreateRequest
-	if err := c.ShouldBindJSON(&request); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-	if request.UserID < 1 || strings.TrimSpace(request.Name) == "" ||
-		strings.TrimSpace(request.Description) == "" ||
-		request.Price < 0 || strings.TrimSpace(request.PosterURL) == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid game details"})
+	request, ok := h.bindAndValidateGame(c)
+	if !ok {
 		return
 	}
 	updated, err := h.Service.Update(id, request.toModel())
@@ -102,6 +88,21 @@ func (h *GameHandler) Update(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, newGameResponse(*updated))
+}
+
+func (h *GameHandler) bindAndValidateGame(c *gin.Context) (GameCreateRequest, bool) {
+	var request GameCreateRequest
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return GameCreateRequest{}, false
+	}
+	if request.UserID < 1 || strings.TrimSpace(request.Name) == "" ||
+		strings.TrimSpace(request.Description) == "" ||
+		request.Price < 0 || strings.TrimSpace(request.PosterURL) == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid game details"})
+		return GameCreateRequest{}, false
+	}
+	return request, true
 }
 
 func (h *GameHandler) Delete(c *gin.Context) {

@@ -136,57 +136,15 @@ func (r *GameRepository) GetGamesCount(keyword, category string, sellerID *int) 
 }
 
 func (r *GameRepository) GetGames(category string, sellerID *int, limit, page int) ([]model.Game, error) {
-	query, args, err := gamesQuery(pagedProducts("", category, sellerID, limit, page)).ToSql()
-	if err != nil {
-		return nil, err
-	}
-
-	rows, err := config.DB.Query(query, args...)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	games := make([]model.Game, 0)
-	gameIndex := make(map[int]int)
-	for rows.Next() {
-		var (
-			gameID       int
-			name         string
-			description  string
-			price        float64
-			posterURL    string
-			categoryID   *int
-			categoryName *string
-			isHidden     *bool
-		)
-
-		if err := rows.Scan(&gameID, &name, &description, &price, &posterURL,
-			&categoryID, &categoryName, &isHidden); err != nil {
-			return nil, err
-		}
-
-		gamePosition, ok := gameIndex[gameID]
-		if !ok {
-			games = append(games, model.NewGame(gameID, name, description, price, posterURL))
-			gamePosition = len(games) - 1
-			gameIndex[gameID] = gamePosition
-		}
-
-		if categoryID != nil {
-			games[gamePosition].Categories = append(games[gamePosition].Categories,
-				model.NewCategory(*categoryID, *categoryName, *isHidden))
-		}
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return games, nil
+	return r.fetchGames("", category, sellerID, limit, page)
 }
 
 func (r *GameRepository) GetGamesByName(keyword, category string, sellerID *int, limit, page int) ([]model.Game, error) {
-	query, args, err := gamesQuery(pagedProducts(keyword, category, sellerID, limit, page)).ToSql()
+	return r.fetchGames(keyword, category, sellerID, limit, page)
+}
 
+func (r *GameRepository) fetchGames(keyword, category string, sellerID *int, limit, page int) ([]model.Game, error) {
+	query, args, err := gamesQuery(pagedProducts(keyword, category, sellerID, limit, page)).ToSql()
 	if err != nil {
 		return nil, err
 	}
@@ -197,6 +155,10 @@ func (r *GameRepository) GetGamesByName(keyword, category string, sellerID *int,
 	}
 	defer rows.Close()
 
+	return scanGameRows(rows)
+}
+
+func scanGameRows(rows *sql.Rows) ([]model.Game, error) {
 	games := make([]model.Game, 0)
 	gameIndex := make(map[int]int)
 	for rows.Next() {
@@ -256,85 +218,31 @@ func (r *GameRepository) GetGame(id int) (*model.GameDetail, error) {
 	}
 	defer rows.Close()
 
+	return scanGameDetailRows(rows)
+}
+
+func scanGameDetailRows(rows *sql.Rows) (*model.GameDetail, error) {
 	var output model.GameDetail
 	initialized := false
 	categorySeen := make(map[int]struct{})
 	requirementSeen := make(map[int]struct{})
 	mediaSeen := make(map[int]struct{})
+
 	for rows.Next() {
-		var (
-			gameID          int
-			name            string
-			description     string
-			price           float64
-			posterUrl       string
-			releaseDate     time.Time
-			categoryID      *int
-			categoryName    *string
-			userID          *int
-			username        *string
-			requirementID   *int
-			operatingSystem *string
-			processor       *string
-			memory          *string
-			graphicsCard    *string
-			directXVersion  *string
-			network         *string
-			storage         *string
-			soundcard       *string
-			additionalNote  *string
-			reqType         *string
-			mediaID         *int
-			mediaUrl        *string
-		)
-		if err := rows.Scan(&gameID, &name, &description, &price, &posterUrl, &releaseDate, &categoryID,
-			&categoryName, &userID, &username, &requirementID, &operatingSystem, &processor, &memory, &graphicsCard, &directXVersion,
-			&network, &storage, &soundcard, &additionalNote, &reqType, &mediaID, &mediaUrl); err != nil {
+		gameData, err := scanGameDetailRow(rows)
+		if err != nil {
 			return nil, err
 		}
+
 		if !initialized {
-			output = model.NewGameDetail(gameID, name, description, price, posterUrl, releaseDate)
+			output = model.NewGameDetail(gameData.gameID, gameData.name, gameData.description, gameData.price, gameData.posterUrl, gameData.releaseDate)
 			initialized = true
 		}
 
-		if categoryID != nil {
-			if _, exists := categorySeen[*categoryID]; exists {
-				categoryID = nil
-			} else {
-				categorySeen[*categoryID] = struct{}{}
-			}
-		}
-		if categoryID != nil {
-			output.Categories = append(output.Categories, model.NewCategory(*categoryID, *categoryName, false))
-		}
-
-		if userID != nil {
-			output.Account = model.NewAccount(*userID, *username)
-		}
-		if requirementID != nil {
-			if _, exists := requirementSeen[*requirementID]; exists {
-				requirementID = nil
-			} else {
-				requirementSeen[*requirementID] = struct{}{}
-			}
-		}
-		if requirementID != nil {
-			output.HardwareRequirement = append(output.HardwareRequirement,
-				model.NewHardware(model.HardwareData{
-					ID: *requirementID, OS: *operatingSystem, Processor: *processor,
-					Memory: *memory, GraphicsCard: *graphicsCard,
-					DirectXVersion: *directXVersion, Network: *network, Storage: *storage,
-					Soundcard: *soundcard, AdditionalNote: *additionalNote, Type: *reqType,
-				}))
-		}
-		if mediaID != nil && mediaUrl != nil {
-			if _, exists := mediaSeen[*mediaID]; exists {
-				continue
-			}
-			mediaSeen[*mediaID] = struct{}{}
-			output.Media = append(output.Media,
-				model.NewMedia(*mediaID, *mediaUrl))
-		}
+		addCategoryIfNew(&output, gameData.categoryID, gameData.categoryName, categorySeen)
+		addAccountIfNew(&output, gameData.userID, gameData.username)
+		addRequirementIfNew(&output, gameData.requirementID, gameData.requirementFields, requirementSeen)
+		addMediaIfNew(&output, gameData.mediaID, gameData.mediaUrl, mediaSeen)
 	}
 
 	if err := rows.Err(); err != nil {
@@ -344,41 +252,160 @@ func (r *GameRepository) GetGame(id int) (*model.GameDetail, error) {
 	return &output, nil
 }
 
+type gameDetailRowData struct {
+	gameID          int
+	name            string
+	description     string
+	price           float64
+	posterUrl       string
+	releaseDate     time.Time
+	categoryID      *int
+	categoryName    *string
+	userID          *int
+	username        *string
+	requirementID   *int
+	requirementFields requirementFields
+	mediaID         *int
+	mediaUrl        *string
+}
+
+type requirementFields struct {
+	operatingSystem *string
+	processor       *string
+	memory          *string
+	graphicsCard    *string
+	directXVersion  *string
+	network         *string
+	storage         *string
+	soundcard       *string
+	additionalNote  *string
+	reqType         *string
+}
+
+func scanGameDetailRow(rows *sql.Rows) (gameDetailRowData, error) {
+	var (
+		gameID          int
+		name            string
+		description     string
+		price           float64
+		posterUrl       string
+		releaseDate     time.Time
+		categoryID      *int
+		categoryName    *string
+		userID          *int
+		username        *string
+		requirementID   *int
+		operatingSystem *string
+		processor       *string
+		memory          *string
+		graphicsCard    *string
+		directXVersion  *string
+		network         *string
+		storage         *string
+		soundcard       *string
+		additionalNote  *string
+		reqType         *string
+		mediaID         *int
+		mediaUrl        *string
+	)
+	if err := rows.Scan(&gameID, &name, &description, &price, &posterUrl, &releaseDate, &categoryID,
+		&categoryName, &userID, &username, &requirementID, &operatingSystem, &processor, &memory, &graphicsCard, &directXVersion,
+		&network, &storage, &soundcard, &additionalNote, &reqType, &mediaID, &mediaUrl); err != nil {
+		return gameDetailRowData{}, err
+	}
+	return gameDetailRowData{
+		gameID:       gameID,
+		name:         name,
+		description:  description,
+		price:        price,
+		posterUrl:    posterUrl,
+		releaseDate:  releaseDate,
+		categoryID:   categoryID,
+		categoryName: categoryName,
+		userID:       userID,
+		username:     username,
+		requirementID: requirementID,
+		requirementFields: requirementFields{
+			operatingSystem, processor, memory, graphicsCard, directXVersion,
+			network, storage, soundcard, additionalNote, reqType,
+		},
+		mediaID:  mediaID,
+		mediaUrl: mediaUrl,
+	}, nil
+}
+
+func addCategoryIfNew(output *model.GameDetail, categoryID *int, categoryName *string, seen map[int]struct{}) {
+	if categoryID == nil {
+		return
+	}
+	if _, exists := seen[*categoryID]; exists {
+		return
+	}
+	seen[*categoryID] = struct{}{}
+	output.Categories = append(output.Categories, model.NewCategory(*categoryID, *categoryName, false))
+}
+
+func addAccountIfNew(output *model.GameDetail, userID *int, username *string) {
+	if userID != nil && output.Account.ID == 0 {
+		output.Account = model.NewAccount(*userID, *username)
+	}
+}
+
+func addRequirementIfNew(output *model.GameDetail, requirementID *int, fields requirementFields, seen map[int]struct{}) {
+	if requirementID == nil {
+		return
+	}
+	if _, exists := seen[*requirementID]; exists {
+		return
+	}
+	seen[*requirementID] = struct{}{}
+	output.HardwareRequirement = append(output.HardwareRequirement,
+		model.NewHardware(model.HardwareData{
+			ID: *requirementID, OS: *fields.operatingSystem, Processor: *fields.processor,
+			Memory: *fields.memory, GraphicsCard: *fields.graphicsCard,
+			DirectXVersion: *fields.directXVersion, Network: *fields.network, Storage: *fields.storage,
+			Soundcard: *fields.soundcard, AdditionalNote: *fields.additionalNote, Type: *fields.reqType,
+		}))
+}
+
+func addMediaIfNew(output *model.GameDetail, mediaID *int, mediaUrl *string, seen map[int]struct{}) {
+	if mediaID == nil || mediaUrl == nil {
+		return
+	}
+	if _, exists := seen[*mediaID]; exists {
+		return
+	}
+	seen[*mediaID] = struct{}{}
+	output.Media = append(output.Media, model.NewMedia(*mediaID, *mediaUrl))
+}
+
 func (r *GameRepository) Create(game model.GameDetail) (*model.GameDetail, error) {
-	tx, err := config.DB.Begin()
+	id, err := r.execInTx(func(tx *sql.Tx) (int64, error) {
+		columns := []string{"name", "description", "price", "poster_url", "user_id"}
+		values := []any{game.Name, game.Description, game.Price, game.PosterUrl, game.Account.ID}
+		if !time.Time(game.ReleaseDate).IsZero() {
+			columns = append(columns, "release_date")
+			values = append(values, time.Time(game.ReleaseDate))
+		}
+		insert := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Question).
+			Insert("products").
+			Columns(columns...).
+			Values(values...)
+		query, args, err := insert.ToSql()
+		if err != nil {
+			return 0, err
+		}
+		result, err := tx.Exec(query, args...)
+		if err != nil {
+			return 0, err
+		}
+		return result.LastInsertId()
+	})
 	if err != nil {
-		return nil, err
-	}
-	columns := []string{"name", "description", "price", "poster_url", "user_id"}
-	values := []any{game.Name, game.Description, game.Price, game.PosterUrl, game.Account.ID}
-	if !time.Time(game.ReleaseDate).IsZero() {
-		columns = append(columns, "release_date")
-		values = append(values, time.Time(game.ReleaseDate))
-	}
-	insert := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Question).
-		Insert("products").
-		Columns(columns...).
-		Values(values...)
-	query, args, err := insert.ToSql()
-	if err != nil {
-		return nil, err
-	}
-	result, err := tx.Exec(query, args...)
-	if err != nil {
-		_ = tx.Rollback()
-		return nil, err
-	}
-	id, err := result.LastInsertId()
-	if err != nil {
-		_ = tx.Rollback()
 		return nil, err
 	}
 
-	if err := insertGameRelations(tx, id, game); err != nil {
-		_ = tx.Rollback()
-		return nil, err
-	}
-	if err := tx.Commit(); err != nil {
+	if err := r.insertGameRelationsTx(nil, id, game); err != nil {
 		return nil, err
 	}
 
@@ -391,43 +418,37 @@ func (r *GameRepository) Create(game model.GameDetail) (*model.GameDetail, error
 }
 
 func (r *GameRepository) Update(id int, game model.GameDetail) (*model.GameDetail, error) {
-	tx, err := config.DB.Begin()
+	_, err := r.execInTx(func(tx *sql.Tx) (int64, error) {
+		_, err := tx.Exec(
+			"UPDATE products SET name = ?, description = ?, release_date = ?, price = ?, poster_url = ?, user_id = ? WHERE product_id = ?",
+			game.Name, game.Description, time.Time(game.ReleaseDate), game.Price, game.PosterUrl, game.Account.ID, id,
+		)
+		if err != nil {
+			return 0, err
+		}
+		var exists bool
+		if err := tx.QueryRow("SELECT EXISTS (SELECT 1 FROM products WHERE product_id = ?)", id).Scan(&exists); err != nil {
+			return 0, err
+		}
+		if !exists {
+			return 0, ErrGameNotFound
+		}
+		for _, query := range []string{
+			"DELETE FROM product_categories WHERE product_id = ?",
+			"DELETE FROM hardware_requirement WHERE product_id = ?",
+			"DELETE FROM media WHERE product_id = ?",
+		} {
+			if _, err := tx.Exec(query, id); err != nil {
+				return 0, err
+			}
+		}
+		return int64(id), nil
+	})
 	if err != nil {
 		return nil, err
-	}
-	_, err = tx.Exec(
-		"UPDATE products SET name = ?, description = ?, release_date = ?, price = ?, poster_url = ?, user_id = ? WHERE product_id = ?",
-		game.Name, game.Description, time.Time(game.ReleaseDate), game.Price, game.PosterUrl, game.Account.ID, id,
-	)
-	if err != nil {
-		_ = tx.Rollback()
-		return nil, err
-	}
-	var exists bool
-	if err := tx.QueryRow("SELECT EXISTS (SELECT 1 FROM products WHERE product_id = ?)", id).Scan(&exists); err != nil {
-		_ = tx.Rollback()
-		return nil, err
-	}
-	if !exists {
-		_ = tx.Rollback()
-		return nil, ErrGameNotFound
 	}
 
-	for _, query := range []string{
-		"DELETE FROM product_categories WHERE product_id = ?",
-		"DELETE FROM hardware_requirement WHERE product_id = ?",
-		"DELETE FROM media WHERE product_id = ?",
-	} {
-		if _, err := tx.Exec(query, id); err != nil {
-			_ = tx.Rollback()
-			return nil, err
-		}
-	}
-	if err := insertGameRelations(tx, int64(id), game); err != nil {
-		_ = tx.Rollback()
-		return nil, err
-	}
-	if err := tx.Commit(); err != nil {
+	if err := r.insertGameRelationsTx(nil, int64(id), game); err != nil {
 		return nil, err
 	}
 
@@ -437,6 +458,88 @@ func (r *GameRepository) Update(id int, game model.GameDetail) (*model.GameDetai
 	updated.HardwareRequirement = game.HardwareRequirement
 	updated.Media = game.Media
 	return &updated, nil
+}
+
+func (r *GameRepository) execInTx(fn func(*sql.Tx) (int64, error)) (int64, error) {
+	tx, err := config.DB.Begin()
+	if err != nil {
+		return 0, err
+	}
+	id, err := fn(tx)
+	if err != nil {
+		_ = tx.Rollback()
+		return 0, err
+	}
+	if err := tx.Commit(); err != nil {
+		return 0, err
+	}
+	return id, nil
+}
+
+func (r *GameRepository) insertGameRelationsTx(tx *sql.Tx, productID int64, game model.GameDetail) error {
+	if tx == nil {
+		var err error
+		tx, err = config.DB.Begin()
+		if err != nil {
+			return err
+		}
+		defer func() {
+			if err != nil {
+				_ = tx.Rollback()
+			} else {
+				err = tx.Commit()
+			}
+		}()
+	}
+	if err := insertCategories(tx, productID, game.Categories); err != nil {
+		return err
+	}
+	if err := insertRequirements(tx, productID, game.HardwareRequirement); err != nil {
+		return err
+	}
+	if err := insertMedia(tx, productID, game.Media); err != nil {
+		return err
+	}
+	return nil
+}
+
+func insertCategories(tx *sql.Tx, productID int64, categories []model.Category) error {
+	for _, category := range categories {
+		if _, err := tx.Exec("INSERT INTO product_categories (product_id, category_id) VALUES (?, ?)", productID, category.ID); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func insertRequirements(tx *sql.Tx, productID int64, requirements []model.Hardware) error {
+	for _, requirement := range requirements {
+		if _, err := tx.Exec(`INSERT INTO hardware_requirement
+			(operating_system, processor, memory, graphics_card, directx_version, network, storage, soundcard, additional_note, type, product_id)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+			requirement.OS, requirement.Processor, requirement.Memory, requirement.GraphicsCard,
+			requirement.DirectXVersion, requirement.Network, requirement.Storage, requirement.Soundcard,
+			requirement.AdditionalNote, requirement.Type, productID,
+		); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func insertMedia(tx *sql.Tx, productID int64, media []model.Media) error {
+	mediaSeen := make(map[string]struct{}, len(media))
+	for _, m := range media {
+		url := string(m.MediaUrl)
+		if _, exists := mediaSeen[url]; exists {
+			continue
+		}
+		mediaSeen[url] = struct{}{}
+		if _, err := tx.Exec("INSERT INTO media (media_url, product_id) VALUES (?, ?)", m.MediaUrl, productID); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (r *GameRepository) Delete(id, userID int) error {
@@ -463,37 +566,6 @@ func (r *GameRepository) Delete(id, userID int) error {
 			return ErrGameNotFound
 		}
 		return ErrGameNotOwned
-	}
-	return nil
-}
-
-func insertGameRelations(tx *sql.Tx, productID int64, game model.GameDetail) error {
-	for _, category := range game.Categories {
-		if _, err := tx.Exec("INSERT INTO product_categories (product_id, category_id) VALUES (?, ?)", productID, category.ID); err != nil {
-			return err
-		}
-	}
-	for _, requirement := range game.HardwareRequirement {
-		if _, err := tx.Exec(`INSERT INTO hardware_requirement
-			(operating_system, processor, memory, graphics_card, directx_version, network, storage, soundcard, additional_note, type, product_id)
-			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-			requirement.OS, requirement.Processor, requirement.Memory, requirement.GraphicsCard,
-			requirement.DirectXVersion, requirement.Network, requirement.Storage, requirement.Soundcard,
-			requirement.AdditionalNote, requirement.Type, productID,
-		); err != nil {
-			return err
-		}
-	}
-	mediaSeen := make(map[string]struct{}, len(game.Media))
-	for _, media := range game.Media {
-		url := string(media.MediaUrl)
-		if _, exists := mediaSeen[url]; exists {
-			continue
-		}
-		mediaSeen[url] = struct{}{}
-		if _, err := tx.Exec("INSERT INTO media (media_url, product_id) VALUES (?, ?)", media.MediaUrl, productID); err != nil {
-			return err
-		}
 	}
 	return nil
 }
