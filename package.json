@@ -1,0 +1,5 @@
+{
+  "devDependencies": {
+    "@sgx-labs/same": "^0.12.1"
+  }
+}
