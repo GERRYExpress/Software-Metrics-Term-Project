@@ -4,16 +4,19 @@ import { defineStore } from 'pinia'
 
 export const useAuthStore = defineStore('auth', () => {
     const account = ref<Account | null>(readAccount())
-    const isLoggedIn = computed(() => Boolean(localStorage.getItem('kd5f_token') && account.value))
+    const token = ref(localStorage.getItem('kd5f_token'))
+    const isLoggedIn = computed(() => Boolean(token.value && account.value))
 
-    function setSession(nextAccount: Account, token: string) {
+    function setSession(nextAccount: Account, nextToken: string) {
         account.value = nextAccount
-        localStorage.setItem('kd5f_token', token)
+        token.value = nextToken
+        localStorage.setItem('kd5f_token', nextToken)
         localStorage.setItem('kd5f_account', JSON.stringify(nextAccount))
     }
 
     function logout() {
         account.value = null
+        token.value = null
         localStorage.removeItem('kd5f_token')
         localStorage.removeItem('kd5f_account')
     }

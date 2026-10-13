@@ -92,10 +92,22 @@ export interface GameInput {
     userId: number
     name: string
     description: string
-    releaseDate: string
+    releaseDate: Date
     price: number
     posterUrl: string
     categoryIds: number[]
+    hardwareRequirements: HardwareInput[]
+    mediaUrls: string[]
+}
+
+export interface GameCreateRequest {
+    userId: number
+    releaseDate: Date
+    categoryIds: number[]
+    name: string
+    description: string
+    price: number
+    posterUrl: string
     hardwareRequirements: HardwareInput[]
     mediaUrls: string[]
 }

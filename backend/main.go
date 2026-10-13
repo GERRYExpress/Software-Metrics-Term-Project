@@ -66,7 +66,8 @@ func CreateAccountEndpoint(r *gin.RouterGroup) {
 	service := &service.AccountService{Repo: repo}
 	handler := &handler.AccountHandler{Service: service}
 	r.GET("", handler.GetAccounts)
-	r.POST("", handler.Register)
+	r.POST("", handler.Create)
+	r.DELETE("/:id", handler.Delete)
 	r.POST("/login", handler.Login)
 }
 
@@ -75,6 +76,9 @@ func CreateGameEndpoint(r *gin.RouterGroup) {
 	service := &service.GameService{Repo: repo}
 	handler := &handler.GameHandler{Service: service}
 	r.GET("", handler.GetGames)
+	r.POST("", handler.Create)
+	r.PUT("/:id", handler.Update)
+	r.DELETE("/:id", handler.Delete)
 	r.GET("/:id", handler.GetGame)
 }
 
@@ -84,6 +88,8 @@ func CreateCategoryEndpoint(r *gin.RouterGroup) {
 	handler := &handler.CategoryHandler{Service: service}
 	r.GET("", handler.GetCategories)
 	r.POST("", handler.Create)
+	r.PUT("/:id", handler.Update)
+	r.DELETE("/:id", handler.Delete)
 }
 
 func CreateWishlistEndpoint(r *gin.RouterGroup) {

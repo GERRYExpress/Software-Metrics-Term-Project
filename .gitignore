@@ -39,6 +39,7 @@ __screenshots__/
 *.timestamp-*-*.mjs
 
 */.env*
+.env
 
 # Binaries for programs and plugins
 *.exe
@@ -66,3 +67,5 @@ go.work.sum
 */.scannerwork
 .scannerwork/*
 .sonar*
+
+*.sh

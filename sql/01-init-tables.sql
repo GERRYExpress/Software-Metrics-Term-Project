@@ -56,7 +56,7 @@ CREATE TABLE media (
 	media_id INT NOT NULL UNIQUE AUTO_INCREMENT,
     media_url VARCHAR(255),
     product_id INT NOT NULL,
-    PRIMARY KEY (media_url),
+    PRIMARY KEY (media_id),
     FOREIGN KEY (product_id) REFERENCES products(product_id) ON DELETE CASCADE
 );
 

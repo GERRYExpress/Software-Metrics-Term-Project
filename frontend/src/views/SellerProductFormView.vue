@@ -9,7 +9,7 @@ import GameService from '@/service/GameService'
 import { useSellerStore } from '@/stores/seller'
 import { useUserActionStore } from '@/stores/userAction'
 import type { Category, GameDetail, GameInput, Hardware, HardwareInput } from '@/types'
-import { computed, onMounted, ref } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 const route = useRoute()
@@ -20,6 +20,7 @@ const categories = ref<Category[]>([])
 const isLoading = ref(true)
 const isSaving = ref(false)
 const errorMessage = ref('')
+const errorBanner = ref<HTMLElement | null>(null)
 
 const form = ref<GameInput>(createEmptyForm())
 const selectedCategoryIds = ref<number[]>([])
@@ -36,6 +37,12 @@ const isEditMode = computed(() => productId.value !== null)
 const pageTitle = computed(() => isEditMode.value ? 'Edit product' : 'Add product')
 
 onMounted(loadForm)
+watch(errorMessage, async message => {
+    if (message) {
+        await nextTick()
+        errorBanner.value?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
+})
 
 async function loadForm() {
     isLoading.value = true
@@ -68,7 +75,7 @@ function populateForm(detail: GameDetail, sellerId: number) {
         userId: sellerId,
         name: detail.name || '',
         description: detail.description || '',
-        releaseDate: formatDateForInput(detail.releaseDate),
+        releaseDate: detail.releaseDate || new Date(),
         price: Number(detail.price || 0),
         posterUrl: detail.posterUrl || '',
         categoryIds: detail.categories?.map(category => category.id) ?? [],
@@ -126,7 +133,7 @@ function createEmptyForm(): GameInput {
         userId: 0,
         name: '',
         description: '',
-        releaseDate: '',
+        releaseDate: new Date(),
         price: 0,
         posterUrl: '',
         categoryIds: [],
@@ -171,11 +178,6 @@ function hasHardwareValue(requirement: HardwareInput) {
         .some(([, value]) => String(value).trim())
 }
 
-function formatDateForInput(value: Date | null | undefined) {
-    if (!value) return ''
-    return new Date(value).toISOString().slice(0, 10)
-}
-
 function isValidUrl(value: string) {
     try {
         const url = new URL(value)
@@ -192,19 +194,16 @@ function getErrorMessage(error: unknown, fallback: string) {
 </script>
 
 <template>
-    <ProductMainContainer class="mx-auto flex w-full max-w-6xl flex-col gap-y-6 px-4 md:px-8">
+    <ProductMainContainer class="mx-auto flex w-2xl *:w-full flex-col gap-y-6 px-4 md:px-8">
         <div class="flex flex-wrap items-end justify-between gap-3">
             <div>
                 <p class="text-action font-bold uppercase tracking-widest">Seller center</p>
                 <h1>{{ pageTitle }}</h1>
                 <p class="text-white/70">Keep your storefront information complete and accurate.</p>
             </div>
-            <button type="button" class="rounded-lg bg-secondary px-4 py-2 font-bold cursor-pointer" @click="router.push({ name: 'seller-dashboard-view' })">
-                Cancel
-            </button>
         </div>
 
-        <div v-if="errorMessage" class="rounded-xl border border-red/60 bg-red/10 p-4 text-red-100" role="alert">
+        <div v-if="errorMessage" ref="errorBanner" class="rounded-xl border border-red/60 bg-red/10 p-4 text-red-100" role="alert">
             {{ errorMessage }}
         </div>
 
@@ -213,17 +212,17 @@ function getErrorMessage(error: unknown, fallback: string) {
         </div>
 
         <form v-else class="flex flex-col gap-y-6" @submit.prevent="submitForm">
-            <AppCard class="w-full gap-y-4!">
+            <AppCard class="w-full">
                 <h2 class="text-2xl">Basic information</h2>
-                <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div class="grid grid-cols-1 gap-4 w-full md:grid-cols-2">
                     <BaseInput v-model="form.name" label="Product name" placeholder="Enter a game name"/>
                     <BaseInput v-model.number="form.price" label="Price" type="number" min="0" step="0.01" placeholder="0.00"/>
                     <BaseInput v-model="form.releaseDate" label="Release date" type="date"/>
                     <BaseInput v-model="form.posterUrl" label="Poster URL" type="url" placeholder="https://..."/>
                 </div>
-                <div class="flex flex-col gap-y-2">
+                <div class="flex flex-col gap-y-2 w-full">
                     <label for="description" class="font-bold">Description</label>
-                    <textarea id="description" v-model="form.description" rows="6" class="w-full rounded-lg bg-tertiary p-3 text-white outline-none focus:ring-2 focus:ring-action" placeholder="Describe your game"/>
+                    <textarea id="description" v-model="form.description" rows="6" class="w-full border rounded-lg bg-tertiary p-3 text-white outline-none focus:ring-2 focus:ring-action" placeholder="Describe your game"/>
                 </div>
                 <div v-if="form.posterUrl" class="flex flex-col gap-y-2">
                     <span class="font-bold">Poster preview</span>
@@ -232,11 +231,11 @@ function getErrorMessage(error: unknown, fallback: string) {
             </AppCard>
 
             <AppCard class="w-full gap-y-4!">
-                <div>
+                <div class="w-full">
                     <h2 class="text-2xl">Categories</h2>
                     <p class="text-sm text-white/60">Select at least one category.</p>
                 </div>
-                <div v-if="categories.length" class="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                <div v-if="categories.length" class="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3 w-full">
                     <label v-for="category in categories" :key="category.id" class="flex items-center gap-2 rounded-lg bg-tertiary p-3 cursor-pointer">
                         <input v-model="selectedCategoryIds" type="checkbox" :value="category.id" class="accent-action"/>
                         <span>{{ category.name }}</span>
@@ -245,11 +244,11 @@ function getErrorMessage(error: unknown, fallback: string) {
                 <p v-else class="text-white/60">No categories are available. Create one from the seller dashboard first.</p>
             </AppCard>
 
-            <AppCard class="w-full gap-y-4!">
+            <AppCard class="w-full *:w-full gap-y-4!">
                 <GalleryUploadCard v-model="form.mediaUrls"/>
             </AppCard>
 
-            <AppCard class="w-full gap-y-4!">
+            <AppCard class="w-full *:w-full gap-y-4!">
                 <div>
                     <h2 class="text-2xl">System requirements</h2>
                     <p class="text-sm text-white/60">Both sections are optional. Empty sections are not sent.</p>
@@ -270,9 +269,14 @@ function getErrorMessage(error: unknown, fallback: string) {
                 </div>
             </AppCard>
 
-            <BaseButton :disabled="isSaving" type="action">
-                {{ isSaving ? 'Saving...' : isEditMode ? 'Save changes' : 'Create product' }}
-            </BaseButton>
+            <div class="flex flex-row gap-x-5">
+                <BaseButton type="danger" class="w-1/2!" @click="router.push({ name: 'seller-dashboard-view' })">
+                    Cancel
+                </BaseButton>
+                <BaseButton class="w-1/2!" :disabled="isSaving" type="action">
+                    {{ isSaving ? 'Saving...' : isEditMode ? 'Save changes' : 'Create product' }}
+                </BaseButton>
+            </div>
         </form>
     </ProductMainContainer>
 </template>

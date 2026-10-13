@@ -18,6 +18,7 @@ const { id, name, description, releaseDate, categories, price, media, hardwareRe
 
 const inCart = computed(() => (id.value ? userActionStore.isInCart(id.value) : false))
 const inWishlist = computed(() => (id.value ? userActionStore.isInWishlist(id.value) : false))
+const placeholderPoster = '/placeholder-game.svg'
 
 const formattedCategories = computed(() => {
     if (categories.value) {
@@ -44,13 +45,23 @@ const handleWishlistAction = () => {
         userActionStore.toggleWishlist(id.value, name.value)
     }
 }
+
+const handlePosterError = () => {
+    if (posterUrl.value !== placeholderPoster) posterUrl.value = placeholderPoster
+}
 </script>
 
 <template>
     <ProductMainContainer>
         <AppCard class="grid grid-cols-2 pt-10 gap-x-5 relative">
             <RouterLink class="absolute top-2 left-5" @click="$router.go(-1)" to="">Back</RouterLink>
-            <Image class="rounded-xl w-full" layout="constrained" :src="posterUrl"/>
+            <Image
+                class="rounded-xl w-full"
+                layout="constrained"
+                :src="posterUrl || placeholderPoster"
+                alt="Game poster"
+                @error="handlePosterError"
+            />
             <div class="flex flex-col place-self-start h-full gap-y-2">
                 <h2>{{ name }}</h2>
                 <h3>Published on <b>{{ formattedDate ?? 'XXXXXXX' }}</b> by <b>{{ account?.username ?? 'USER' }}</b></h3>

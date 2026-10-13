@@ -19,5 +19,17 @@ services:
     image: sonarqube:latest
     ports:
       - "9001:9000"
+  ngrok:
+    image: ngrok/ngrok:latest
+    network_mode: host
+    stdin_open: true
+    tty: true
+    environment:
+      NGROK_AUTHTOKEN: "${NGROK_AUTHTOKEN}"
+    command:
+      - "http"
+      - "9001"
+      - "--url"
+      - "${NGROK_URL}"
 volumes:
   mdata:

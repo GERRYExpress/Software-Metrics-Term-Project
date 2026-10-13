@@ -43,7 +43,7 @@ onMounted(() => {
     })
 
     // Auto-advance banner every 5 seconds
-    timer = setInterval(nextBanner, 5000)
+    timer = setInterval(nextBanner, 2500)
 
     // Check if welcome popup was already displayed
     if (!localStorage.getItem('kd5f_welcome_seen')) {
@@ -113,10 +113,10 @@ const closeWelcome = () => {
         </div>
 
         <div class="flex flex-col items-center gap-y-2 my-4 text-center">
-            <RouterLink :to="{ name: 'search-result-view' }" class="text-xl">
+            <RouterLink v-if="authStore.isLoggedIn"  :to="{ name: 'search-result-view' }" class="text-xl">
                 EXPLORE MORE
             </RouterLink>
-            <p v-if="!authStore.isLoggedIn" class="text-white/60 text-sm">
+            <p v-else class="text-white/60 text-sm">
                 Or get started:
                 <RouterLink :to="{ name: 'login-view' }" class="text-action">Sign In</RouterLink> or
                 <RouterLink :to="{ name: 'register-view' }" class="text-action">Register</RouterLink>

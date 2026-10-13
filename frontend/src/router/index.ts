@@ -58,25 +58,25 @@ const router = createRouter({
           path: '/profile',
           name: 'profile-view',
           component: ProfileView,
-          meta: { title: 'Profile' }
+          meta: { title: 'Profile', requiresAuth: true }
         },
         {
           path: '/carts',
           name: 'cart-view',
           component: CartView,
-          meta: { title: 'Carts' }
+          meta: { title: 'Carts', requiresAuth: true }
         },
         {
           path: '/wishlists',
           name: 'wishlist-view',
           component: WishlistView,
-          meta: { title: 'Wishlists' }
+          meta: { title: 'Wishlists', requiresAuth: true }
         },
         {
           path: '/contacts',
           name: 'contact-view',
           component: ContactView,
-          meta: { title: 'Contacts' }
+          meta: { title: 'Contacts', requiresAuth: true }
         },
         {
           path: '/games/:id',
@@ -132,13 +132,16 @@ const router = createRouter({
       ]
     }
   ],
+  scrollBehavior(to, from, savedPosition) {
+    if (savedPosition) return savedPosition
+    if (to.name === from.name && to.query.page !== from.query.page) return false
+    return { top: 0 }
+  }
 })
 
 router.beforeEach(to => {
   const authStore = useAuthStore()
-  const isAuthPage = to.name === 'login-view' || to.name === 'register-view'
-
-  if (!isAuthPage && !authStore.isLoggedIn) {
+  if (to.meta.requiresAuth && !authStore.isLoggedIn) {
     return {
       name: 'login-view',
       query: { redirect: to.fullPath }

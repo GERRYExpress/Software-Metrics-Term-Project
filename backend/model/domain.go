@@ -115,6 +115,22 @@ func (d ReleaseDate) MarshalJSON() ([]byte, error) {
 	return time.Time(d).MarshalJSON()
 }
 
+func (d *ReleaseDate) UnmarshalJSON(value []byte) error {
+	var parsed time.Time
+	if err := json.Unmarshal(value, &parsed); err != nil {
+		raw, rawErr := strconv.Unquote(string(value))
+		if rawErr != nil {
+			return err
+		}
+		parsed, rawErr = time.Parse("2006-01-02", raw)
+		if rawErr != nil {
+			return err
+		}
+	}
+	*d = ReleaseDate(parsed)
+	return nil
+}
+
 func (d *ReleaseDate) Scan(value any) error {
 	parsed, err := scanTime(value)
 	if err != nil {

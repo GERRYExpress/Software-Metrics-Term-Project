@@ -2,6 +2,7 @@ package model
 
 type Game struct {
 	ID          ID          `json:"id"`
+	UserID      ID          `json:"userId"`
 	ReleaseDate ReleaseDate `json:"releaseDate"`
 	Categories  Categories  `json:"categories"`
 	Name        Name        `json:"name"`
