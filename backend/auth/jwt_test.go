@@ -1,143 +1,141 @@
 package auth
 
 import (
+	"net/http"
+	"net/http/httptest"
 	"os"
+	"reflect"
 	"testing"
-	"time"
 
-	"github.com/golang-jwt/jwt/v5"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	"github.com/gin-gonic/gin"
 )
 
+func Test_secret(t *testing.T) {
+	tests := []struct {
+		name    string
+		setup   func()
+		want    []byte
+		wantErr bool
+	}{
+		{
+			name: "secret is configured",
+			setup: func() {
+				os.Setenv("JWT_SECRET", "supersecretkey")
+			},
+			want:    []byte("supersecretkey"),
+			wantErr: false,
+		},
+		{
+			name: "secret is missing",
+			setup: func() {
+				os.Unsetenv("JWT_SECRET")
+			},
+			want:    nil,
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.setup()
+			got, err := secret()
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("secret() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if !tt.wantErr && !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("secret() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestIssue(t *testing.T) {
-	os.Setenv("JWT_SECRET", "test-secret-key-for-testing")
+	os.Setenv("JWT_SECRET", "supersecretkey")
 	defer os.Unsetenv("JWT_SECRET")
 
-	token, err := Issue(42)
-	require.NoError(t, err)
-	assert.NotEmpty(t, token)
-
-	// Verify token can be parsed - uses Subject claim
-	parsed, err := jwt.ParseWithClaims(token, &jwt.RegisteredClaims{}, func(t *jwt.Token) (interface{}, error) {
-		return []byte("test-secret-key-for-testing"), nil
-	})
-	require.NoError(t, err)
-	assert.True(t, parsed.Valid)
-	claims := parsed.Claims.(*jwt.RegisteredClaims)
-	assert.Equal(t, "42", claims.Subject)
-}
-
-func TestIssue_EmptySecret(t *testing.T) {
-	os.Unsetenv("JWT_SECRET")
-
-	_, err := Issue(1)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "JWT_SECRET is not configured")
-}
-
-func TestIssue_InvalidUserID(t *testing.T) {
-	os.Setenv("JWT_SECRET", "test-secret-key-for-testing")
-	defer os.Unsetenv("JWT_SECRET")
-
-	// Test that user ID is included in token as Subject
-	token, err := Issue(999)
-	require.NoError(t, err)
-
-	parsed, err := jwt.ParseWithClaims(token, &jwt.RegisteredClaims{}, func(t *jwt.Token) (interface{}, error) {
-		return []byte("test-secret-key-for-testing"), nil
-	})
-	require.NoError(t, err)
-	claims := parsed.Claims.(*jwt.RegisteredClaims)
-	assert.Equal(t, "999", claims.Subject)
+	type args struct {
+		accountID int
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name:    "successfully issue token for account ID 1",
+			args:    args{accountID: 1},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := Issue(tt.args.accountID)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("Issue() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if !tt.wantErr && got == "" {
+				t.Errorf("Issue() returned empty token string")
+			}
+		})
+	}
 }
 
 func TestMiddleware(t *testing.T) {
-	os.Setenv("JWT_SECRET", "test-secret-key-for-testing")
+	gin.SetMode(gin.TestMode)
+	os.Setenv("JWT_SECRET", "supersecretkey")
 	defer os.Unsetenv("JWT_SECRET")
 
-	// Generate a valid token
-	token, err := Issue(1)
-	require.NoError(t, err)
+	validToken, _ := Issue(42)
 
-	// The middleware is tested via integration tests
-	_ = token
-}
-
-func TestMiddleware_ValidToken(t *testing.T) {
-	os.Setenv("JWT_SECRET", "test-secret-key-for-testing")
-	defer os.Unsetenv("JWT_SECRET")
-
-	token, err := Issue(123)
-	require.NoError(t, err)
-
-	// Verify token structure
-	parsed, err := jwt.ParseWithClaims(token, &jwt.RegisteredClaims{}, func(t *jwt.Token) (interface{}, error) {
-		return []byte("test-secret-key-for-testing"), nil
-	})
-	require.NoError(t, err)
-	assert.True(t, parsed.Valid)
-
-	claims := parsed.Claims.(*jwt.RegisteredClaims)
-	assert.Equal(t, "123", claims.Subject)
-	assert.NotZero(t, claims.ExpiresAt)
-
-	// Verify expiration is in the future
-	expTime := claims.ExpiresAt.Time
-	assert.True(t, expTime.After(time.Now()))
-}
-
-func TestMiddleware_ExpiredToken(t *testing.T) {
-	os.Setenv("JWT_SECRET", "test-secret-key-for-testing")
-	defer os.Unsetenv("JWT_SECRET")
-
-	// Create an expired token
-	claims := &jwt.RegisteredClaims{
-		Subject:   "456",
-		ExpiresAt: jwt.NewNumericDate(time.Now().Add(-time.Hour)),
-		IssuedAt:  jwt.NewNumericDate(time.Now().Add(-2 * time.Hour)),
+	tests := []struct {
+		name           string
+		authHeader     string
+		wantStatusCode int
+	}{
+		{
+			name:           "valid token",
+			authHeader:     "Bearer " + validToken,
+			wantStatusCode: http.StatusOK,
+		},
+		{
+			name:           "missing bearer prefix",
+			authHeader:     validToken,
+			wantStatusCode: http.StatusUnauthorized,
+		},
+		{
+			name:           "empty header",
+			authHeader:     "",
+			wantStatusCode: http.StatusUnauthorized,
+		},
+		{
+			name:           "invalid token signature",
+			authHeader:     "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI.invalid.signature",
+			wantStatusCode: http.StatusUnauthorized,
+		},
 	}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	signedToken, err := token.SignedString([]byte("test-secret-key-for-testing"))
-	require.NoError(t, err)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := gin.New()
+			r.Use(Middleware())
+			r.GET("/test", func(c *gin.Context) {
+				// Verify the middleware successfully extracted and set the accountID
+				if id, exists := c.Get("accountID"); exists && id == 42 {
+					c.Status(http.StatusOK)
+					return
+				}
+				c.Status(http.StatusInternalServerError)
+			})
 
-	// Parse should fail due to expiration
-	parsed, err := jwt.ParseWithClaims(signedToken, &jwt.RegisteredClaims{}, func(t *jwt.Token) (interface{}, error) {
-		return []byte("test-secret-key-for-testing"), nil
-	})
-	assert.Error(t, err)
-	assert.False(t, parsed.Valid)
-}
+			req := httptest.NewRequest(http.MethodGet, "/test", nil)
+			if tt.authHeader != "" {
+				req.Header.Set("Authorization", tt.authHeader)
+			}
+			w := httptest.NewRecorder()
 
-func TestMiddleware_WrongSecret(t *testing.T) {
-	os.Setenv("JWT_SECRET", "test-secret-key-for-testing")
-	defer os.Unsetenv("JWT_SECRET")
+			r.ServeHTTP(w, req)
 
-	// Create token with different secret
-	claims := &jwt.RegisteredClaims{
-		Subject:   "789",
-		ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour)),
-		IssuedAt:  jwt.NewNumericDate(time.Now()),
+			if w.Code != tt.wantStatusCode {
+				t.Errorf("Middleware() expected status %v, got %v", tt.wantStatusCode, w.Code)
+			}
+		})
 	}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	wrongToken, err := token.SignedString([]byte("wrong-secret"))
-	require.NoError(t, err)
-
-	// Parse with correct secret should fail
-	parsed, err := jwt.ParseWithClaims(wrongToken, &jwt.RegisteredClaims{}, func(t *jwt.Token) (interface{}, error) {
-		return []byte("test-secret-key-for-testing"), nil
-	})
-	assert.Error(t, err)
-	assert.False(t, parsed.Valid)
-}
-
-func TestMiddleware_MalformedToken(t *testing.T) {
-	os.Setenv("JWT_SECRET", "test-secret-key-for-testing")
-	defer os.Unsetenv("JWT_SECRET")
-
-	// Try to parse malformed token - ParseWithClaims may return nil token on error
-	_, err := jwt.ParseWithClaims("not.a.valid.token", &jwt.RegisteredClaims{}, func(t *jwt.Token) (interface{}, error) {
-		return []byte("test-secret-key-for-testing"), nil
-	})
-	assert.Error(t, err)
 }
