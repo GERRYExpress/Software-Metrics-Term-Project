@@ -9,32 +9,26 @@ const RouterLinkStub = {
   props: ['to']
 }
 
-describe('AppNavItem', () => {
-  const global = {
-    stubs: {
-      RouterLink: RouterLinkStub
-    }
+const global = {
+  stubs: {
+    RouterLink: RouterLinkStub
   }
+}
 
-  it('renders home icon for name=home', () => {
-    const wrapper = mount(AppNavItem, { props: { name: 'home', routeName: 'home' }, global })
-    expect(wrapper.find('svg').exists()).toBe(true)
-  })
+describe('AppNavItem', () => {
+  const iconTests = [
+    { name: 'home', routeName: 'home', iconName: 'Home' },
+    { name: 'cart', routeName: 'cart', iconName: 'ShoppingCart' },
+    { name: 'wishlist', routeName: 'wishlist', iconName: 'Heart' },
+    { name: 'profile', routeName: 'profile', iconName: 'UserRound' }
+  ]
 
-  it('renders cart icon for name=cart', () => {
-    const wrapper = mount(AppNavItem, { props: { name: 'cart', routeName: 'cart' }, global })
-    expect(wrapper.find('svg').exists()).toBe(true)
-  })
-
-  it('renders wishlist icon for name=wishlist', () => {
-    const wrapper = mount(AppNavItem, { props: { name: 'wishlist', routeName: 'wishlist' }, global })
-    expect(wrapper.find('svg').exists()).toBe(true)
-  })
-
-  it('renders profile icon for name=profile', () => {
-    const wrapper = mount(AppNavItem, { props: { name: 'profile', routeName: 'profile' }, global })
-    expect(wrapper.find('svg').exists()).toBe(true)
-  })
+  for (const { name, routeName, iconName } of iconTests) {
+    it(`renders ${iconName} icon for name=${name}`, () => {
+      const wrapper = mount(AppNavItem, { props: { name, routeName }, global })
+      expect(wrapper.find('svg').exists()).toBe(true)
+    })
+  }
 
   it('links to correct route', () => {
     const wrapper = mount(AppNavItem, { props: { name: 'cart', routeName: 'cart' }, global })
