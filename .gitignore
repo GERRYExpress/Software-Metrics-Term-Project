@@ -68,4 +68,5 @@ go.work.sum
 .scannerwork/*
 .sonar*
 
-*.sh
+*.sh.same
+*.same
