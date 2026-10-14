@@ -304,14 +304,28 @@ func TestGameHandler_Update(t *testing.T) {
 		router, mock, cleanup := setupGameTest(t)
 		defer cleanup()
 
-		// First transaction: update product data.
+		// First transaction mirrors GameRepository.Update: UPDATE, existence
+		// check, clearing of stale relations, then commit.
 		mock.ExpectBegin()
 		mock.ExpectExec("UPDATE products").
 			WillReturnResult(sqlmock.NewResult(1, 1))
+		mock.ExpectQuery("SELECT EXISTS").
+			WithArgs(1).
+			WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(true))
+		mock.ExpectExec("DELETE FROM product_categories").
+			WithArgs(1).
+			WillReturnResult(sqlmock.NewResult(0, 1))
+		mock.ExpectExec("DELETE FROM hardware_requirement").
+			WithArgs(1).
+			WillReturnResult(sqlmock.NewResult(0, 1))
+		mock.ExpectExec("DELETE FROM media").
+			WithArgs(1).
+			WillReturnResult(sqlmock.NewResult(0, 1))
 		mock.ExpectCommit()
 
-		// The service retrieves the updated game afterward.
-		expectGameListOK(mock, fullDetailRows())
+		// Second transaction re-inserts relations (empty payload: no execs).
+		mock.ExpectBegin()
+		mock.ExpectCommit()
 
 		w := serveJSON(router, http.MethodPut, "/games/1", validJSON)
 
