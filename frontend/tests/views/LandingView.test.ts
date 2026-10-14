@@ -1,11 +1,11 @@
 import { mount } from '@vue/test-utils'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import LandingView from '../../src/views/LandingView.vue'
-import GameService from '@/service/GameService'
+import GameService from '../../src/service/GameService'
 import { createPinia, setActivePinia } from 'pinia'
 import { createRouter, createWebHistory } from 'vue-router'
 import type { AxiosResponse } from 'axios'
-import type { Game } from '@/types'
+import type { Game } from '../../src/types'
 
 vi.mock('@/service/GameService')
 vi.mock('vue-router', async (importOriginal) => {
@@ -62,7 +62,8 @@ describe('LandingView.vue', () => {
 
     expect(wrapper.text()).toContain('HIGHLIGHTS')
     expect(wrapper.text()).toContain('FEATURED GAMES')
-    expect(wrapper.text()).toContain('Featured Game')
+    const gameCard = wrapper.findComponent({ name: 'GameCard' })
+    expect(gameCard.props('game').name).toBe('Featured Game')
     expect(wrapper.find('.welcome-modal').exists()).toBe(true)
 
     await wrapper.find('.welcome-modal').trigger('click')

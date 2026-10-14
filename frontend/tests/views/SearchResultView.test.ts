@@ -1,10 +1,10 @@
 import { mount } from '@vue/test-utils'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import SearchResultView from '../../src/views/SearchResultView.vue'
-import GameService from '@/service/GameService'
+import GameService from '../../src/service/GameService'
 import { createRouter, createWebHistory } from 'vue-router'
 import type { AxiosResponse } from 'axios'
-import type { Game } from '@/types'
+import type { Game } from '../../src/types'
 
 vi.mock('@/service/GameService', () => ({
   default: {
@@ -14,6 +14,12 @@ vi.mock('@/service/GameService', () => ({
     getGamesByKeywordAndCategory: vi.fn()
   }
 }))
+vi.mock('vue-router', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('vue-router')>()
+  return {
+    ...actual,
+  }
+})
 
 describe('SearchResultView.vue', () => {
   const router = createRouter({

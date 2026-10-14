@@ -1,6 +1,6 @@
 import { mount } from '@vue/test-utils'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import IdentificationView from '@/views/IdentificationView.vue'
+import IdentificationView from '../../src/views/IdentificationView.vue'
 import { setActivePinia, createPinia } from 'pinia'
 
 const AuthMainContainerStub = {

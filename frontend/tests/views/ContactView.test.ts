@@ -1,6 +1,6 @@
 import { mount } from '@vue/test-utils'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import ContactView from '@/views/ContactView.vue'
+import ContactView from '../../src/views/ContactView.vue'
 import { setActivePinia, createPinia } from 'pinia'
 
 const ProductMainContainerStub = {

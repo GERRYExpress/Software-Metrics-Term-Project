@@ -1,15 +1,21 @@
 import { mount } from '@vue/test-utils'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import SellerProductFormView from '../../src/views/SellerProductFormView.vue'
-import CategoryService from '@/service/CategoryService'
+import CategoryService from '../../src/service/CategoryService'
 import { createPinia, setActivePinia } from 'pinia'
 import { createRouter, createWebHistory } from 'vue-router'
 import type { AxiosResponse } from 'axios'
-import type { Category } from '@/types'
+import type { Category } from '../../src/types'
 
 vi.mock('@/service/CategoryService')
 vi.mock('@/service/GameService')
 
+vi.mock('vue-router', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('vue-router')>()
+  return {
+    ...actual,
+  }
+})
 describe('SellerProductFormView.vue', () => {
   const router = createRouter({
     history: createWebHistory(),
@@ -26,7 +32,7 @@ describe('SellerProductFormView.vue', () => {
       data: [{ id: 1, name: 'RPG', isHidden: false }] as Category[]
     } as unknown as AxiosResponse<Category[]>)
     
-    const { useSellerStore } = await import('@/stores/seller')
+    const { useSellerStore } = await import('../../src/stores/seller')
     const sellerStore = useSellerStore()
     vi.spyOn(sellerStore, 'loadSeller').mockResolvedValueOnce({
       id: 5,

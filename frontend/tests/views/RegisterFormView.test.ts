@@ -1,7 +1,6 @@
 import { mount } from '@vue/test-utils'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import RegisterFormView from '@/views/RegisterFormView.vue'
-import AccountService from '@/service/AccountService'
+import RegisterFormView from '../../src/views/RegisterFormView.vue'
 import { setActivePinia, createPinia } from 'pinia'
 
 vi.mock('@/service/AccountService')

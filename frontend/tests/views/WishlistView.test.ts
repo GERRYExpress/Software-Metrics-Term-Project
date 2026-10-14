@@ -1,8 +1,9 @@
 import { mount } from '@vue/test-utils'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import WishlistView from '@/views/WishlistView.vue'
-import WishlistService from '@/service/WishlistService'
+import WishlistView from '../../src/views/WishlistView.vue'
+import WishlistService from '../../src/service/WishlistService'
 import { setActivePinia, createPinia } from 'pinia'
+import type { AxiosResponse } from 'axios'
 
 vi.mock('@/service/WishlistService')
 
@@ -24,11 +25,13 @@ const RouterLinkStub = {
   props: ['to']
 }
 
-const global = {
-  stubs: {
-    ProductMainContainer: ProductMainContainerStub,
-    ProductListCard: ProductListCardStub,
-    RouterLink: RouterLinkStub
+const globalStubs = {
+  global: {
+    stubs: {
+      ProductMainContainer: ProductMainContainerStub,
+      ProductListCard: ProductListCardStub,
+      RouterLink: RouterLinkStub
+    }
   }
 }
 
@@ -39,19 +42,25 @@ describe('WishlistView', () => {
   })
 
   it('renders wishlist page with title', () => {
-    const wrapper = mount(WishlistView, { global })
+    const wrapper = mount(WishlistView, globalStubs)
     expect(wrapper.find('h1').text()).toBe('Wishlists')
   })
 
   it('shows empty state when no wishlists', () => {
-    vi.mocked(WishlistService.getWishlists).mockResolvedValue({ data: [] })
-    const wrapper = mount(WishlistView, { global })
+    vi.mocked(WishlistService.getWishlists).mockResolvedValue({
+      data: []
+    } as unknown as AxiosResponse<unknown[]>)
+
+    const wrapper = mount(WishlistView, globalStubs)
     expect(wrapper.text()).toContain('Looks like your wishlist is empty')
   })
 
   it('shows link to search results in empty state', () => {
-    vi.mocked(WishlistService.getWishlists).mockResolvedValue({ data: [] })
-    const wrapper = mount(WishlistView, { global })
+    vi.mocked(WishlistService.getWishlists).mockResolvedValue({
+      data: []
+    } as unknown as AxiosResponse<unknown[]>)
+
+    const wrapper = mount(WishlistView, globalStubs)
     expect(wrapper.text()).toContain('Find more games')
     expect(wrapper.findComponent(RouterLinkStub).exists()).toBe(true)
   })

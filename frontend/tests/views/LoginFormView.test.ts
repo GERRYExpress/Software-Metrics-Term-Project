@@ -1,8 +1,6 @@
 import { mount } from '@vue/test-utils'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import LoginFormView from '@/views/LoginFormView.vue'
-import AccountService from '@/service/AccountService'
-import { useAuthStore } from '@/stores/auth'
+import LoginFormView from '../../src/views/LoginFormView.vue'
 import { setActivePinia, createPinia } from 'pinia'
 
 vi.mock('@/service/AccountService')

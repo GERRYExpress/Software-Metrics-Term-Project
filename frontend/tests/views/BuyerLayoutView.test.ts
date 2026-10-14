@@ -29,7 +29,7 @@ describe('BuyerLayoutView.vue', () => {
     router.push('/?expired=true')
     await router.isReady()
 
-    const { useUserActionStore } = await import('@/stores/userAction')
+    const { useUserActionStore } = await import('../../src/stores/userAction')
     const userActionStore = useUserActionStore()
     const fetchInitialDataSpy = vi.spyOn(userActionStore, 'fetchInitialData')
 
@@ -50,8 +50,8 @@ describe('BuyerLayoutView.vue', () => {
     })
 
     expect(fetchInitialDataSpy).toHaveBeenCalled()
-
     await wrapper.find('.session-modal').trigger('click')
-    expect(router.currentRoute.value.name).toBe('login-view')
+    await router.isReady() // Ensure router finishes navigation
+    expect(router.currentRoute.value.name).toBe('landing-view')
   })
 })

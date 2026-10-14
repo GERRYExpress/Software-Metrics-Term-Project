@@ -1,8 +1,9 @@
 import { mount } from '@vue/test-utils'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import CartView from '@/views/CartView.vue'
-import CartService from '@/service/CartService'
+import CartView from '../../src/views/CartView.vue'
+import CartService from '../../src/service/CartService'
 import { setActivePinia, createPinia } from 'pinia'
+import type { AxiosResponse } from 'axios'
 
 vi.mock('@/service/CartService')
 
@@ -43,14 +44,16 @@ const RouterLinkStub = {
   props: ['to']
 }
 
-const global = {
-  stubs: {
-    ProductMainContainer: ProductMainContainerStub,
-    ProductListCard: ProductListCardStub,
-    PriceSummaryCard: PriceSummaryCardStub,
-    PaymentModal: PaymentModalStub,
-    PaymentSuccessModal: PaymentSuccessModalStub,
-    RouterLink: RouterLinkStub
+const globalStubs = {
+  global: {
+    stubs: {
+      ProductMainContainer: ProductMainContainerStub,
+      ProductListCard: ProductListCardStub,
+      PriceSummaryCard: PriceSummaryCardStub,
+      PaymentModal: PaymentModalStub,
+      PaymentSuccessModal: PaymentSuccessModalStub,
+      RouterLink: RouterLinkStub
+    }
   }
 }
 
@@ -61,30 +64,38 @@ describe('CartView', () => {
   })
 
   it('renders cart page with title', () => {
-    const wrapper = mount(CartView, { global })
+    const wrapper = mount(CartView, globalStubs)
     expect(wrapper.find('h1').text()).toBe('Carts')
   })
 
   it('shows empty state when no carts', () => {
-    vi.mocked(CartService.getCarts).mockResolvedValue({ data: [] })
-    const wrapper = mount(CartView, { global })
+    // FIX: Use unknown[] instead of any
+    vi.mocked(CartService.getCarts).mockResolvedValue({
+      data: []
+    } as unknown as AxiosResponse<unknown[]>)
+
+    const wrapper = mount(CartView, globalStubs)
     expect(wrapper.text()).toContain('Your cart is currently empty')
   })
 
   it('shows link to search results in empty state', () => {
-    vi.mocked(CartService.getCarts).mockResolvedValue({ data: [] })
-    const wrapper = mount(CartView, { global })
+    // FIX: Use unknown[] instead of any
+    vi.mocked(CartService.getCarts).mockResolvedValue({
+      data: []
+    } as unknown as AxiosResponse<unknown[]>)
+
+    const wrapper = mount(CartView, globalStubs)
     expect(wrapper.text()).toContain('Find more games')
     expect(wrapper.findComponent(RouterLinkStub).exists()).toBe(true)
   })
 
   it('has PriceSummaryCard component', () => {
-    const wrapper = mount(CartView, { global })
+    const wrapper = mount(CartView, globalStubs)
     expect(wrapper.findComponent(PriceSummaryCardStub).exists()).toBe(true)
   })
 
   it('has PaymentModal and PaymentSuccessModal components', () => {
-    const wrapper = mount(CartView, { global })
+    const wrapper = mount(CartView, globalStubs)
     expect(wrapper.findComponent(PaymentModalStub).exists()).toBe(true)
     expect(wrapper.findComponent(PaymentSuccessModalStub).exists()).toBe(true)
   })

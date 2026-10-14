@@ -4,6 +4,12 @@ import SellerLayoutView from '../../src/views/SellerLayoutView.vue'
 import { createPinia, setActivePinia } from 'pinia'
 import { createRouter, createWebHistory } from 'vue-router'
 
+vi.mock('vue-router', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('vue-router')>()
+  return {
+    ...actual,
+  }
+})
 describe('SellerLayoutView.vue', () => {
   const router = createRouter({
     history: createWebHistory(),
@@ -22,7 +28,7 @@ describe('SellerLayoutView.vue', () => {
     router.push('/seller?expired=true')
     await router.isReady()
 
-    const { useSellerStore } = await import('@/stores/seller')
+    const { useSellerStore } = await import('../../src/stores/seller')
     const sellerStore = useSellerStore()
     vi.spyOn(sellerStore, 'loadSeller').mockResolvedValueOnce({
       id: 1,

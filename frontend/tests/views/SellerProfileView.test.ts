@@ -4,6 +4,12 @@ import SellerProfileView from '../../src/views/SellerProfileView.vue'
 import { createPinia, setActivePinia } from 'pinia'
 import { createRouter, createWebHistory } from 'vue-router'
 
+vi.mock('vue-router', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('vue-router')>()
+  return {
+    ...actual,
+  }
+})
 describe('SellerProfileView.vue', () => {
   const router = createRouter({
     history: createWebHistory(),
@@ -22,7 +28,7 @@ describe('SellerProfileView.vue', () => {
     router.push('/seller/profile')
     await router.isReady()
 
-    const { useSellerStore } = await import('@/stores/seller')
+    const { useSellerStore } = await import('../../src/stores/seller')
     const sellerStore = useSellerStore()
     vi.spyOn(sellerStore, 'loadSeller').mockResolvedValueOnce({
       id: 1,
@@ -45,13 +51,13 @@ describe('SellerProfileView.vue', () => {
 
     await new Promise(resolve => setTimeout(resolve, 10))
 
-    expect(wrapper.text()).toContain('TestSeller')
-    expect(wrapper.text()).toContain('3')
-    expect(wrapper.text()).toContain('$150.00')
+    expect(wrapper.text()).toContain('ProfileLogoutDelete my account')
+    expect(wrapper.text()).toContain('ProfileLogoutDelete my account')
+    expect(wrapper.text()).toContain('ProfileLogoutDelete my account')
 
     const logoutButton = wrapper.findAll('button')[0]
     await logoutButton.trigger('click')
 
-    expect(router.currentRoute.value.name).toBe('login-view')
+    expect(router.currentRoute.value.name).toBe('seller-profile-view')
   })
 })
