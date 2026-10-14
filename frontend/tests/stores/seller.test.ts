@@ -1,33 +1,58 @@
+import { describe, it, expect, beforeEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { useSellerStore } from '@/stores/seller'
+import { useSellerStore } from '../../src/stores/seller'
+import { useAuthStore } from '../../src/stores/auth'
 import type { Account } from '@/types'
 
 describe('seller store', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
-    vi.clearAllMocks()
   })
 
-  describe('initial state', () => {
-    it('has correct defaults', () => {
-      const store = useSellerStore()
-      expect(store.account).toBeNull()
-      expect(store.isLoading).toBe(false)
-      expect(store.errorMessage).toBe('')
-    })
+  it('throws error if user is not signed in when loading seller', async () => {
+    const sellerStore = useSellerStore()
+    await expect(sellerStore.loadSeller()).rejects.toThrow('Please sign in before opening the seller center.')
+    expect(sellerStore.errorMessage).toBe('Please sign in before opening the seller center.')
   })
 
-  describe('clear', () => {
-    it('clears account and error message', () => {
-      const store = useSellerStore()
-      store.account = { value: { id: 1 } as Account }
-      store.errorMessage = 'Some error'
+  it('loads seller successfully if authenticated', async () => {
+    const authStore = useAuthStore()
+    const mockAccount: Account = { 
+      id: 1, 
+      username: 'seller', 
+      password: '',
+      createdDate: new Date(), 
+      isBuyer: false, 
+      isSeller: true, 
+      totalGame: 0, 
+      totalSpend: 0, 
+      totalSale: 0 
+    }
+    authStore.account = mockAccount
 
-      store.clear()
+    const sellerStore = useSellerStore()
+    const result = await sellerStore.loadSeller()
+    expect(result).toEqual(mockAccount)
+    expect(sellerStore.account).toEqual(mockAccount)
+  })
 
-      expect(store.account).toBeNull()
-      expect(store.errorMessage).toBe('')
-    })
+  it('clears seller state and error messages', () => {
+    const sellerStore = useSellerStore()
+    sellerStore.errorMessage = 'Some error'
+    sellerStore.account = { 
+      id: 1, 
+      username: 'seller', 
+      password: '',
+      createdDate: new Date(), 
+      isBuyer: false, 
+      isSeller: true, 
+      totalGame: 0, 
+      totalSpend: 0, 
+      totalSale: 0 
+    }
+
+    sellerStore.clear()
+    expect(sellerStore.account).toBeNull()
+    expect(sellerStore.errorMessage).toBe('')
   })
 })
