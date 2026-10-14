@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"bytes"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -13,40 +12,23 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"software-metrics-project/config"
 	"software-metrics-project/model"
 	"software-metrics-project/repository"
-	"software-metrics-project/repository/repotestutil"
 	"software-metrics-project/service"
 )
 
 func setupGameTest(t *testing.T) (*gin.Engine, sqlmock.Sqlmock, func()) {
-	t.Helper()
-
-	db, mock, cleanup := repotestutil.NewMockDB(t)
-
-	originalDB := config.DB
-	config.DB = db
-
 	repo := &repository.GameRepository{}
 	svc := &service.GameService{Repo: repo}
 	h := &GameHandler{Service: svc}
 
-	router := gin.New()
-	router.Use(gin.Recovery())
-
-	router.GET("/games", h.GetGames)
-	router.GET("/games/:id", h.GetGame)
-	router.POST("/games", h.Create)
-	router.PUT("/games/:id", h.Update)
-	router.DELETE("/games/:id", h.Delete)
-
-	fullCleanup := func() {
-		config.DB = originalDB
-		cleanup()
-	}
-
-	return router, mock, fullCleanup
+	return setupHandlerTest(t, func(router *gin.Engine) {
+		router.GET("/games", h.GetGames)
+		router.GET("/games/:id", h.GetGame)
+		router.POST("/games", h.Create)
+		router.PUT("/games/:id", h.Update)
+		router.DELETE("/games/:id", h.Delete)
+	})
 }
 
 func fullDetailRows() *sqlmock.Rows {
@@ -124,67 +106,36 @@ func gameListRows() *sqlmock.Rows {
 }
 
 func TestGameHandler_GetGames(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-
 	t.Run("success without keyword returns 200", func(t *testing.T) {
 		router, mock, cleanup := setupGameTest(t)
 		defer cleanup()
 
-		mock.ExpectQuery("SELECT").
-			WillReturnRows(gameListRows())
+		expectGameListOK(mock, gameListRows())
+		expectGameCountOK(mock, 1)
 
-		mock.ExpectQuery("SELECT COUNT").
-			WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(1))
+		w := serve(router, http.MethodGet, "/games?_page=1&_limit=10")
 
-		w := httptest.NewRecorder()
-		req := httptest.NewRequest(
-			http.MethodGet,
-			"/games?_page=1&_limit=10",
-			nil,
-		)
-
-		router.ServeHTTP(w, req)
-
-		assert.Equal(t, http.StatusOK, w.Code)
 		assert.Equal(t, "1", w.Header().Get("X-Total-Count"))
-		assert.NoError(t, mock.ExpectationsWereMet())
+		assertStatusAndMet(t, mock, w, http.StatusOK)
 	})
 
 	t.Run("success with keyword and sellerId returns 200", func(t *testing.T) {
 		router, mock, cleanup := setupGameTest(t)
 		defer cleanup()
 
-		mock.ExpectQuery("SELECT").
-			WillReturnRows(gameListRows())
+		expectGameListOK(mock, gameListRows())
+		expectGameCountOK(mock, 1)
 
-		mock.ExpectQuery("SELECT COUNT").
-			WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(1))
+		w := serve(router, http.MethodGet, "/games?keyword=test&sellerId=1")
 
-		w := httptest.NewRecorder()
-		req := httptest.NewRequest(
-			http.MethodGet,
-			"/games?keyword=test&sellerId=1",
-			nil,
-		)
-
-		router.ServeHTTP(w, req)
-
-		assert.Equal(t, http.StatusOK, w.Code)
-		assert.NoError(t, mock.ExpectationsWereMet())
+		assertStatusAndMet(t, mock, w, http.StatusOK)
 	})
 
 	t.Run("invalid limit returns 400", func(t *testing.T) {
 		router, _, cleanup := setupGameTest(t)
 		defer cleanup()
 
-		w := httptest.NewRecorder()
-		req := httptest.NewRequest(
-			http.MethodGet,
-			"/games?_limit=-1",
-			nil,
-		)
-
-		router.ServeHTTP(w, req)
+		w := serve(router, http.MethodGet, "/games?_limit=-1")
 
 		assert.Equal(t, http.StatusBadRequest, w.Code)
 	})
@@ -193,14 +144,7 @@ func TestGameHandler_GetGames(t *testing.T) {
 		router, _, cleanup := setupGameTest(t)
 		defer cleanup()
 
-		w := httptest.NewRecorder()
-		req := httptest.NewRequest(
-			http.MethodGet,
-			"/games?_page=0",
-			nil,
-		)
-
-		router.ServeHTTP(w, req)
+		w := serve(router, http.MethodGet, "/games?_page=0")
 
 		assert.Equal(t, http.StatusBadRequest, w.Code)
 	})
@@ -209,14 +153,7 @@ func TestGameHandler_GetGames(t *testing.T) {
 		router, _, cleanup := setupGameTest(t)
 		defer cleanup()
 
-		w := httptest.NewRecorder()
-		req := httptest.NewRequest(
-			http.MethodGet,
-			"/games?sellerId=abc",
-			nil,
-		)
-
-		router.ServeHTTP(w, req)
+		w := serve(router, http.MethodGet, "/games?sellerId=abc")
 
 		assert.Equal(t, http.StatusBadRequest, w.Code)
 	})
@@ -225,14 +162,7 @@ func TestGameHandler_GetGames(t *testing.T) {
 		router, _, cleanup := setupGameTest(t)
 		defer cleanup()
 
-		w := httptest.NewRecorder()
-		req := httptest.NewRequest(
-			http.MethodGet,
-			"/games?sellerId=0",
-			nil,
-		)
-
-		router.ServeHTTP(w, req)
+		w := serve(router, http.MethodGet, "/games?sellerId=0")
 
 		assert.Equal(t, http.StatusBadRequest, w.Code)
 	})
@@ -241,65 +171,43 @@ func TestGameHandler_GetGames(t *testing.T) {
 		router, mock, cleanup := setupGameTest(t)
 		defer cleanup()
 
-		mock.ExpectQuery("SELECT").
-			WillReturnError(errors.New("database error"))
+		expectSelectError(mock, errors.New("database error"))
 
-		w := httptest.NewRecorder()
-		req := httptest.NewRequest(http.MethodGet, "/games", nil)
+		w := serve(router, http.MethodGet, "/games")
 
-		router.ServeHTTP(w, req)
-
-		assert.Equal(t, http.StatusInternalServerError, w.Code)
-		assert.NoError(t, mock.ExpectationsWereMet())
+		assertStatusAndMet(t, mock, w, http.StatusInternalServerError)
 	})
 
 	t.Run("repository count error returns 500", func(t *testing.T) {
 		router, mock, cleanup := setupGameTest(t)
 		defer cleanup()
 
-		mock.ExpectQuery("SELECT").
-			WillReturnRows(gameListRows())
+		expectGameListOK(mock, gameListRows())
+		expectCountError(mock, errors.New("count error"))
 
-		mock.ExpectQuery("SELECT COUNT").
-			WillReturnError(errors.New("count error"))
+		w := serve(router, http.MethodGet, "/games")
 
-		w := httptest.NewRecorder()
-		req := httptest.NewRequest(http.MethodGet, "/games", nil)
-
-		router.ServeHTTP(w, req)
-
-		assert.Equal(t, http.StatusInternalServerError, w.Code)
-		assert.NoError(t, mock.ExpectationsWereMet())
+		assertStatusAndMet(t, mock, w, http.StatusInternalServerError)
 	})
 }
 
 func TestGameHandler_GetGame(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-
 	t.Run("success returns 200", func(t *testing.T) {
 		router, mock, cleanup := setupGameTest(t)
 		defer cleanup()
 
-		mock.ExpectQuery("SELECT").
-			WillReturnRows(fullDetailRows())
+		expectGameListOK(mock, fullDetailRows())
 
-		w := httptest.NewRecorder()
-		req := httptest.NewRequest(http.MethodGet, "/games/1", nil)
+		w := serve(router, http.MethodGet, "/games/1")
 
-		router.ServeHTTP(w, req)
-
-		assert.Equal(t, http.StatusOK, w.Code)
-		assert.NoError(t, mock.ExpectationsWereMet())
+		assertStatusAndMet(t, mock, w, http.StatusOK)
 	})
 
 	t.Run("non numeric id returns 400", func(t *testing.T) {
 		router, _, cleanup := setupGameTest(t)
 		defer cleanup()
 
-		w := httptest.NewRecorder()
-		req := httptest.NewRequest(http.MethodGet, "/games/abc", nil)
-
-		router.ServeHTTP(w, req)
+		w := serve(router, http.MethodGet, "/games/abc")
 
 		assert.Equal(t, http.StatusBadRequest, w.Code)
 	})
@@ -308,22 +216,15 @@ func TestGameHandler_GetGame(t *testing.T) {
 		router, mock, cleanup := setupGameTest(t)
 		defer cleanup()
 
-		mock.ExpectQuery("SELECT").
-			WillReturnError(errors.New("database error"))
+		expectSelectError(mock, errors.New("database error"))
 
-		w := httptest.NewRecorder()
-		req := httptest.NewRequest(http.MethodGet, "/games/1", nil)
+		w := serve(router, http.MethodGet, "/games/1")
 
-		router.ServeHTTP(w, req)
-
-		assert.Equal(t, http.StatusInternalServerError, w.Code)
-		assert.NoError(t, mock.ExpectationsWereMet())
+		assertStatusAndMet(t, mock, w, http.StatusInternalServerError)
 	})
 }
 
 func TestGameHandler_Create(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-
 	validJSON := `{
 		"userId": 1,
 		"name": "N",
@@ -344,33 +245,16 @@ func TestGameHandler_Create(t *testing.T) {
 		mock.ExpectBegin()
 		mock.ExpectCommit()
 
-		w := httptest.NewRecorder()
-		req := httptest.NewRequest(
-			http.MethodPost,
-			"/games",
-			bytes.NewBufferString(validJSON),
-		)
-		req.Header.Set("Content-Type", "application/json")
+		w := serveJSON(router, http.MethodPost, "/games", validJSON)
 
-		router.ServeHTTP(w, req)
-
-		assert.Equal(t, http.StatusCreated, w.Code)
-		assert.NoError(t, mock.ExpectationsWereMet())
+		assertStatusAndMet(t, mock, w, http.StatusCreated)
 	})
 
 	t.Run("invalid json returns 400", func(t *testing.T) {
 		router, _, cleanup := setupGameTest(t)
 		defer cleanup()
 
-		w := httptest.NewRecorder()
-		req := httptest.NewRequest(
-			http.MethodPost,
-			"/games",
-			bytes.NewBufferString(`{bad json`),
-		)
-		req.Header.Set("Content-Type", "application/json")
-
-		router.ServeHTTP(w, req)
+		w := serveJSON(router, http.MethodPost, "/games", `{bad json`)
 
 		assert.Equal(t, http.StatusBadRequest, w.Code)
 	})
@@ -387,15 +271,7 @@ func TestGameHandler_Create(t *testing.T) {
 			"posterUrl": ""
 		}`
 
-		w := httptest.NewRecorder()
-		req := httptest.NewRequest(
-			http.MethodPost,
-			"/games",
-			bytes.NewBufferString(invalidJSON),
-		)
-		req.Header.Set("Content-Type", "application/json")
-
-		router.ServeHTTP(w, req)
+		w := serveJSON(router, http.MethodPost, "/games", invalidJSON)
 
 		assert.Equal(t, http.StatusBadRequest, w.Code)
 	})
@@ -409,24 +285,13 @@ func TestGameHandler_Create(t *testing.T) {
 			WillReturnError(errors.New("insert failed"))
 		mock.ExpectRollback()
 
-		w := httptest.NewRecorder()
-		req := httptest.NewRequest(
-			http.MethodPost,
-			"/games",
-			bytes.NewBufferString(validJSON),
-		)
-		req.Header.Set("Content-Type", "application/json")
+		w := serveJSON(router, http.MethodPost, "/games", validJSON)
 
-		router.ServeHTTP(w, req)
-
-		assert.Equal(t, http.StatusInternalServerError, w.Code)
-		assert.NoError(t, mock.ExpectationsWereMet())
+		assertStatusAndMet(t, mock, w, http.StatusInternalServerError)
 	})
 }
 
 func TestGameHandler_Update(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-
 	validJSON := `{
 		"userId": 1,
 		"name": "N",
@@ -446,21 +311,11 @@ func TestGameHandler_Update(t *testing.T) {
 		mock.ExpectCommit()
 
 		// The service retrieves the updated game afterward.
-		mock.ExpectQuery("SELECT").
-			WillReturnRows(fullDetailRows())
+		expectGameListOK(mock, fullDetailRows())
 
-		w := httptest.NewRecorder()
-		req := httptest.NewRequest(
-			http.MethodPut,
-			"/games/1",
-			bytes.NewBufferString(validJSON),
-		)
-		req.Header.Set("Content-Type", "application/json")
+		w := serveJSON(router, http.MethodPut, "/games/1", validJSON)
 
-		router.ServeHTTP(w, req)
-
-		assert.Equal(t, http.StatusOK, w.Code)
-		assert.NoError(t, mock.ExpectationsWereMet())
+		assertStatusAndMet(t, mock, w, http.StatusOK)
 	})
 
 	t.Run("game not found returns 404", func(t *testing.T) {
@@ -481,32 +336,15 @@ func TestGameHandler_Update(t *testing.T) {
 
 		mock.ExpectRollback()
 
-		w := httptest.NewRecorder()
-		req := httptest.NewRequest(
-			http.MethodPut,
-			"/games/99",
-			bytes.NewBufferString(validJSON),
-		)
-		req.Header.Set("Content-Type", "application/json")
+		w := serveJSON(router, http.MethodPut, "/games/99", validJSON)
 
-		router.ServeHTTP(w, req)
-
-		assert.Equal(t, http.StatusNotFound, w.Code)
-		assert.NoError(t, mock.ExpectationsWereMet())
+		assertStatusAndMet(t, mock, w, http.StatusNotFound)
 	})
 	t.Run("invalid id returns 400", func(t *testing.T) {
 		router, _, cleanup := setupGameTest(t)
 		defer cleanup()
 
-		w := httptest.NewRecorder()
-		req := httptest.NewRequest(
-			http.MethodPut,
-			"/games/abc",
-			bytes.NewBufferString(validJSON),
-		)
-		req.Header.Set("Content-Type", "application/json")
-
-		router.ServeHTTP(w, req)
+		w := serveJSON(router, http.MethodPut, "/games/abc", validJSON)
 
 		assert.Equal(t, http.StatusBadRequest, w.Code)
 	})
@@ -515,15 +353,7 @@ func TestGameHandler_Update(t *testing.T) {
 		router, _, cleanup := setupGameTest(t)
 		defer cleanup()
 
-		w := httptest.NewRecorder()
-		req := httptest.NewRequest(
-			http.MethodPut,
-			"/games/0",
-			bytes.NewBufferString(validJSON),
-		)
-		req.Header.Set("Content-Type", "application/json")
-
-		router.ServeHTTP(w, req)
+		w := serveJSON(router, http.MethodPut, "/games/0", validJSON)
 
 		assert.Equal(t, http.StatusBadRequest, w.Code)
 	})
@@ -532,15 +362,7 @@ func TestGameHandler_Update(t *testing.T) {
 		router, _, cleanup := setupGameTest(t)
 		defer cleanup()
 
-		w := httptest.NewRecorder()
-		req := httptest.NewRequest(
-			http.MethodPut,
-			"/games/1",
-			bytes.NewBufferString(`invalid`),
-		)
-		req.Header.Set("Content-Type", "application/json")
-
-		router.ServeHTTP(w, req)
+		w := serveJSON(router, http.MethodPut, "/games/1", `invalid`)
 
 		assert.Equal(t, http.StatusBadRequest, w.Code)
 	})
@@ -554,79 +376,43 @@ func TestGameHandler_Update(t *testing.T) {
 			WillReturnError(errors.New("update error"))
 		mock.ExpectRollback()
 
-		w := httptest.NewRecorder()
-		req := httptest.NewRequest(
-			http.MethodPut,
-			"/games/1",
-			bytes.NewBufferString(validJSON),
-		)
-		req.Header.Set("Content-Type", "application/json")
+		w := serveJSON(router, http.MethodPut, "/games/1", validJSON)
 
-		router.ServeHTTP(w, req)
-
-		assert.Equal(t, http.StatusInternalServerError, w.Code)
-		assert.NoError(t, mock.ExpectationsWereMet())
+		assertStatusAndMet(t, mock, w, http.StatusInternalServerError)
 	})
 }
 
 func TestGameHandler_Delete(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-
 	t.Run("success returns 204", func(t *testing.T) {
 		router, mock, cleanup := setupGameTest(t)
 		defer cleanup()
 
-		mock.ExpectExec("DELETE FROM products").
-			WillReturnResult(sqlmock.NewResult(0, 1))
+		expectDeleteProducts(mock, 1)
 
-		w := httptest.NewRecorder()
-		req := httptest.NewRequest(
-			http.MethodDelete,
-			"/games/1?userId=1",
-			nil,
-		)
+		w := serve(router, http.MethodDelete, "/games/1?userId=1")
 
-		router.ServeHTTP(w, req)
-
-		assert.Equal(t, http.StatusNoContent, w.Code)
-		assert.NoError(t, mock.ExpectationsWereMet())
+		assertStatusAndMet(t, mock, w, http.StatusNoContent)
 	})
 
 	t.Run("game not found returns 404", func(t *testing.T) {
 		router, mock, cleanup := setupGameTest(t)
 		defer cleanup()
 
-		mock.ExpectExec("DELETE FROM products").
-			WillReturnResult(sqlmock.NewResult(0, 0))
+		expectDeleteProducts(mock, 0)
 
 		mock.ExpectQuery("SELECT").
 			WillReturnError(repository.ErrGameNotFound)
 
-		w := httptest.NewRecorder()
-		req := httptest.NewRequest(
-			http.MethodDelete,
-			"/games/99?userId=1",
-			nil,
-		)
+		w := serve(router, http.MethodDelete, "/games/99?userId=1")
 
-		router.ServeHTTP(w, req)
-
-		assert.Equal(t, http.StatusNotFound, w.Code)
-		assert.NoError(t, mock.ExpectationsWereMet())
+		assertStatusAndMet(t, mock, w, http.StatusNotFound)
 	})
 
 	t.Run("invalid game id returns 400", func(t *testing.T) {
 		router, _, cleanup := setupGameTest(t)
 		defer cleanup()
 
-		w := httptest.NewRecorder()
-		req := httptest.NewRequest(
-			http.MethodDelete,
-			"/games/abc?userId=1",
-			nil,
-		)
-
-		router.ServeHTTP(w, req)
+		w := serve(router, http.MethodDelete, "/games/abc?userId=1")
 
 		assert.Equal(t, http.StatusBadRequest, w.Code)
 	})
@@ -635,14 +421,7 @@ func TestGameHandler_Delete(t *testing.T) {
 		router, _, cleanup := setupGameTest(t)
 		defer cleanup()
 
-		w := httptest.NewRecorder()
-		req := httptest.NewRequest(
-			http.MethodDelete,
-			"/games/1?userId=abc",
-			nil,
-		)
-
-		router.ServeHTTP(w, req)
+		w := serve(router, http.MethodDelete, "/games/1?userId=abc")
 
 		assert.Equal(t, http.StatusBadRequest, w.Code)
 	})
@@ -651,14 +430,7 @@ func TestGameHandler_Delete(t *testing.T) {
 		router, _, cleanup := setupGameTest(t)
 		defer cleanup()
 
-		w := httptest.NewRecorder()
-		req := httptest.NewRequest(
-			http.MethodDelete,
-			"/games/1",
-			nil,
-		)
-
-		router.ServeHTTP(w, req)
+		w := serve(router, http.MethodDelete, "/games/1")
 
 		assert.Equal(t, http.StatusBadRequest, w.Code)
 	})
