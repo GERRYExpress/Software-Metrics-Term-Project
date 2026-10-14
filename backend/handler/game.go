@@ -69,9 +69,9 @@ func (h *GameHandler) Create(c *gin.Context) {
 }
 
 func (h *GameHandler) Update(c *gin.Context) {
-	id, err := strconv.Atoi(c.Param("id"))
-	if err != nil || id < 1 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "id must be a positive integer"})
+	id, err := positiveID(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 	request, ok := h.bindAndValidateGame(c)

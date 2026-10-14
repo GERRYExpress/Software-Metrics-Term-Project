@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"net/http"
 	"software-metrics-project/service"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -42,9 +41,9 @@ func (h *CategoryHandler) Create(c *gin.Context) {
 }
 
 func (h *CategoryHandler) Update(c *gin.Context) {
-	id, err := strconv.Atoi(c.Param("id"))
-	if err != nil || id < 1 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "id must be a positive integer"})
+	id, err := positiveID(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 	var category CategoryRequest
@@ -61,9 +60,9 @@ func (h *CategoryHandler) Update(c *gin.Context) {
 }
 
 func (h *CategoryHandler) Delete(c *gin.Context) {
-	id, err := strconv.Atoi(c.Param("id"))
-	if err != nil || id < 1 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "id must be a positive integer"})
+	id, err := positiveID(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 	if err := h.Service.Delete(id); err != nil {
