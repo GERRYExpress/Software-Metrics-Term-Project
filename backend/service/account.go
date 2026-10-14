@@ -33,7 +33,7 @@ func (s *AccountService) Login(username, password string) (string, *model.Accoun
 }
 
 func (s *AccountService) Register(username, password string) (model.Account, error) {
-	return s.Repo.Create(username, password)
+	return s.Create(username, password)
 }
 
 func (s *AccountService) Create(username, password string) (model.Account, error) {

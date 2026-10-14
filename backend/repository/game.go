@@ -79,13 +79,7 @@ func detailColumns() []string {
 	return append(columns, qualify("m", mediaIDField, mediaURLField)...)
 }
 
-func pagedProducts(keyword, category string, sellerID *int, limit, page int) squirrel.SelectBuilder {
-	query := squirrel.
-		Select(productColumns("")...).
-		From("products").
-		OrderBy("product_id").
-		Limit(uint64(limit)).
-		Offset(uint64((page - 1) * limit))
+func filterProducts(query squirrel.SelectBuilder, keyword, category string, sellerID *int) squirrel.SelectBuilder {
 	if keyword != "" {
 		query = query.Where(squirrel.Like{"name": "%" + keyword + "%"})
 	}
@@ -96,6 +90,16 @@ func pagedProducts(keyword, category string, sellerID *int, limit, page int) squ
 		query = query.Where(squirrel.Eq{userIDField: *sellerID})
 	}
 	return query
+}
+
+func pagedProducts(keyword, category string, sellerID *int, limit, page int) squirrel.SelectBuilder {
+	query := squirrel.
+		Select(productColumns("")...).
+		From("products").
+		OrderBy("product_id").
+		Limit(uint64(limit)).
+		Offset(uint64((page - 1) * limit))
+	return filterProducts(query, keyword, category, sellerID)
 }
 
 func gamesQuery(products squirrel.SelectBuilder) squirrel.SelectBuilder {
@@ -109,19 +113,10 @@ func gamesQuery(products squirrel.SelectBuilder) squirrel.SelectBuilder {
 }
 
 func (r *GameRepository) GetGamesCount(keyword, category string, sellerID *int) (int, error) {
-	queryBuilder := squirrel.
+	queryBuilder := filterProducts(squirrel.
 		Select("COUNT(*)").
 		From("products").
-		PlaceholderFormat(squirrel.Question)
-	if keyword != "" {
-		queryBuilder = queryBuilder.Where(squirrel.Like{"name": "%" + keyword + "%"})
-	}
-	if category != "" {
-		queryBuilder = queryBuilder.Where(squirrel.Expr(existQuery, category))
-	}
-	if sellerID != nil {
-		queryBuilder = queryBuilder.Where(squirrel.Eq{userIDField: *sellerID})
-	}
+		PlaceholderFormat(squirrel.Question), keyword, category, sellerID)
 
 	query, args, err := queryBuilder.ToSql()
 	if err != nil {
@@ -379,6 +374,14 @@ func addMediaIfNew(output *model.GameDetail, mediaID *int, mediaUrl *string, see
 	output.Media = append(output.Media, model.NewMedia(*mediaID, *mediaUrl))
 }
 
+func newGameDetailResult(id int, game model.GameDetail) *model.GameDetail {
+	created := model.NewGameDetail(id, string(game.Name), string(game.Description), float64(game.Price), string(game.PosterUrl), time.Time(game.ReleaseDate))
+	created.Account = game.Account
+	created.Categories = game.Categories
+	created.HardwareRequirement = game.HardwareRequirement
+	created.Media = game.Media
+	return &created
+}
 func (r *GameRepository) Create(game model.GameDetail) (*model.GameDetail, error) {
 	id, err := r.execInTx(func(tx *sql.Tx) (int64, error) {
 		columns := []string{"name", "description", "price", "poster_url", "user_id"}
@@ -409,12 +412,7 @@ func (r *GameRepository) Create(game model.GameDetail) (*model.GameDetail, error
 		return nil, err
 	}
 
-	created := model.NewGameDetail(int(id), string(game.Name), string(game.Description), float64(game.Price), string(game.PosterUrl), time.Time(game.ReleaseDate))
-	created.Account = game.Account
-	created.Categories = game.Categories
-	created.HardwareRequirement = game.HardwareRequirement
-	created.Media = game.Media
-	return &created, nil
+	return newGameDetailResult(int(id), game), nil
 }
 
 func (r *GameRepository) Update(id int, game model.GameDetail) (*model.GameDetail, error) {
@@ -452,12 +450,7 @@ func (r *GameRepository) Update(id int, game model.GameDetail) (*model.GameDetai
 		return nil, err
 	}
 
-	updated := model.NewGameDetail(id, string(game.Name), string(game.Description), float64(game.Price), string(game.PosterUrl), time.Time(game.ReleaseDate))
-	updated.Account = game.Account
-	updated.Categories = game.Categories
-	updated.HardwareRequirement = game.HardwareRequirement
-	updated.Media = game.Media
-	return &updated, nil
+	return newGameDetailResult(id, game), nil
 }
 
 func (r *GameRepository) execInTx(fn func(*sql.Tx) (int64, error)) (int64, error) {

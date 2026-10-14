@@ -77,42 +77,49 @@ func (h Hidden) Value() (driver.Value, error) {
 	return bool(h), nil
 }
 
+func marshalTime(t time.Time) ([]byte, error) {
+	return t.MarshalJSON()
+}
+
+func timeValue(t time.Time) (driver.Value, error) {
+	return t, nil
+}
+
+func assignScannedTime(set func(time.Time), value any) error {
+	parsed, err := scanTime(value)
+	if err != nil {
+		return err
+	}
+	set(parsed)
+	return nil
+}
+
 func (d Date) MarshalJSON() ([]byte, error) {
-	return time.Time(d).MarshalJSON()
+	return marshalTime(time.Time(d))
 }
 
 func (d *Date) Scan(value any) error {
-	parsed, err := scanTime(value)
-	if err != nil {
-		return err
-	}
-	*d = Date(parsed)
-	return nil
+	return assignScannedTime(func(t time.Time) { *d = Date(t) }, value)
 }
 
 func (d Date) Value() (driver.Value, error) {
-	return time.Time(d), nil
+	return timeValue(time.Time(d))
 }
 
 func (d OrderDate) MarshalJSON() ([]byte, error) {
-	return time.Time(d).MarshalJSON()
+	return marshalTime(time.Time(d))
 }
 
 func (d *OrderDate) Scan(value any) error {
-	parsed, err := scanTime(value)
-	if err != nil {
-		return err
-	}
-	*d = OrderDate(parsed)
-	return nil
+	return assignScannedTime(func(t time.Time) { *d = OrderDate(t) }, value)
 }
 
 func (d OrderDate) Value() (driver.Value, error) {
-	return time.Time(d), nil
+	return timeValue(time.Time(d))
 }
 
 func (d ReleaseDate) MarshalJSON() ([]byte, error) {
-	return time.Time(d).MarshalJSON()
+	return marshalTime(time.Time(d))
 }
 
 func (d *ReleaseDate) UnmarshalJSON(value []byte) error {
@@ -132,16 +139,11 @@ func (d *ReleaseDate) UnmarshalJSON(value []byte) error {
 }
 
 func (d *ReleaseDate) Scan(value any) error {
-	parsed, err := scanTime(value)
-	if err != nil {
-		return err
-	}
-	*d = ReleaseDate(parsed)
-	return nil
+	return assignScannedTime(func(t time.Time) { *d = ReleaseDate(t) }, value)
 }
 
 func (d ReleaseDate) Value() (driver.Value, error) {
-	return time.Time(d), nil
+	return timeValue(time.Time(d))
 }
 
 func (d *Date) UnmarshalJSON(value []byte) error {
