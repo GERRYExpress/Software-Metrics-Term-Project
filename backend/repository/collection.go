@@ -106,23 +106,27 @@ type groupedEntry struct {
 	game      model.Game
 }
 
+func buildGameFromRow(r collectionRow) model.Game {
+	if r.gameName == nil {
+		return model.Game{}
+	}
+	price, poster := 0.0, ""
+	if r.gamePrice != nil {
+		price = *r.gamePrice
+	}
+	if r.posterURL != nil {
+		poster = *r.posterURL
+	}
+	return model.NewGame(r.productID, *r.gameName, "", price, poster)
+}
+
 func groupCollectionRows(rows []collectionRow) []groupedEntry {
 	entries := make([]groupedEntry, 0, len(rows))
 	index := make(map[int]int)
 	for _, r := range rows {
 		pos, ok := index[r.productID]
 		if !ok {
-			game := model.Game{}
-			if r.gameName != nil {
-				price, poster := 0.0, ""
-				if r.gamePrice != nil {
-					price = *r.gamePrice
-				}
-				if r.posterURL != nil {
-					poster = *r.posterURL
-				}
-				game = model.NewGame(r.productID, *r.gameName, "", price, poster)
-			}
+			game := buildGameFromRow(r)
 			entries = append(entries, groupedEntry{userID: r.userID, productID: r.productID, date: r.date, game: game})
 			pos = len(entries) - 1
 			index[r.productID] = pos

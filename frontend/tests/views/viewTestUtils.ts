@@ -1,8 +1,7 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { vi } from 'vitest'
-import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
+import { createRouter, createWebHistory, type RouteRecordRaw, Router } from 'vue-router'
 import { mount, flushPromises } from '@vue/test-utils'
-import type { Router } from 'vue-router'
 
 // Shared scaffolding for view tests: real-router factory, common component
 // stubs, and Pinia reset. Replaces the copy-pasted setup blocks.

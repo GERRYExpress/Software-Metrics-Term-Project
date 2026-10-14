@@ -21,7 +21,7 @@ describe('GalleryUploadCard.vue', () => {
     expect(wrapper.text()).toContain('Media 1')
     expect(wrapper.text()).toContain('Media 2')
     expect(wrapper.text()).toContain('Media 3')
-    expect(wrapper.findAll('input').length).toBe(3)
+    expect(wrapper.findAll('input')).toHaveLength(3)
   })
 
   it('emits updated modelValue when typing in an input', async () => {

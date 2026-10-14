@@ -7,7 +7,7 @@ describe('SystemRequirement.vue', () => {
     const wrapper = mount(SystemRequirement)
     const values = wrapper.findAll('.font-bold.text-end')
 
-    expect(values.length).toBe(9)
+    expect(values).toHaveLength(9)
     values.forEach(val => {
       expect(val.text()).toBe('-')
     })
