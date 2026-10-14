@@ -805,6 +805,7 @@ func TestGameRepository_insertGameRelationsTx_WithTx(t *testing.T) {
 		arrange(mock)
 		tx, err := config.DB.Begin()
 		require.NoError(t, err)
+		defer tx.Rollback()
 		return (&GameRepository{}).insertGameRelationsTx(tx, 10, fullGame())
 	}
 
