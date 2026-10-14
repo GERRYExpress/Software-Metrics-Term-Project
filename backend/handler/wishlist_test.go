@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/gin-gonic/gin"
@@ -40,14 +41,21 @@ func setupWishlistTest(t *testing.T) (*gin.Engine, sqlmock.Sqlmock, func()) {
 	return router, mock, fullCleanup
 }
 
+// getWishlistColumns provides the exact 8 columns expected by the repository's Scan.
+func getWishlistColumns() []string {
+	return []string{
+		"user_id", "product_id", "wishlist_date", "name", "price", "poster_url", "category_id", "category_name",
+	}
+}
+
 func TestWishlistHandler_GetWishlists(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	router, mock, cleanup := setupWishlistTest(t)
 	defer cleanup()
 
 	t.Run("success - 200 OK", func(t *testing.T) {
-		rows := sqlmock.NewRows([]string{"id", "game_id"}).AddRow(1, 101)
-		mock.ExpectQuery("SELECT(.*)FROM").WithArgs(1).WillReturnRows(rows)
+		rows := sqlmock.NewRows(getWishlistColumns()).AddRow(1, 101, time.Now(), "Game 1", 29.99, "url1", nil, nil)
+		mock.ExpectQuery("SELECT(.*)FROM wishlists").WithArgs(1).WillReturnRows(rows)
 
 		w := httptest.NewRecorder()
 		req, _ := http.NewRequest(http.MethodGet, "/wishlists/1", nil)
@@ -71,7 +79,14 @@ func TestWishlistHandler_AddWishlist(t *testing.T) {
 	defer cleanup()
 
 	t.Run("success - 200 OK", func(t *testing.T) {
-		mock.ExpectExec("INSERT INTO").WithArgs(1, 42).WillReturnResult(sqlmock.NewResult(1, 1))
+		// 1. Mock the DB insertion
+		mock.ExpectExec("INSERT INTO wishlists").
+			WithArgs(1, 42, sqlmock.AnyArg()).
+			WillReturnResult(sqlmock.NewResult(1, 1))
+
+		// 2. Mock the SELECT from getWishlist. Args: (gameID, userID) due to squirrel map sorting
+		rows := sqlmock.NewRows(getWishlistColumns()).AddRow(1, 42, time.Now(), "Game 1", 29.99, "url1", nil, nil)
+		mock.ExpectQuery("SELECT(.*)FROM wishlists").WithArgs(42, 1).WillReturnRows(rows)
 
 		w := httptest.NewRecorder()
 		req, _ := http.NewRequest(http.MethodPost, "/wishlists/1/42", nil)
@@ -95,7 +110,12 @@ func TestWishlistHandler_DeleteWishlist(t *testing.T) {
 	defer cleanup()
 
 	t.Run("success - 200 OK", func(t *testing.T) {
-		mock.ExpectExec("DELETE FROM").WithArgs(1, 42).WillReturnResult(sqlmock.NewResult(0, 1))
+		// 1. Mock the initial SELECT from getWishlist to verify existence
+		rows := sqlmock.NewRows(getWishlistColumns()).AddRow(1, 42, time.Now(), "Game 1", 29.99, "url1", nil, nil)
+		mock.ExpectQuery("SELECT(.*)FROM wishlists").WithArgs(42, 1).WillReturnRows(rows)
+
+		// 2. Mock the DELETE execution. Args: (gameID, userID)
+		mock.ExpectExec("DELETE FROM wishlists").WithArgs(42, 1).WillReturnResult(sqlmock.NewResult(0, 1))
 
 		w := httptest.NewRecorder()
 		req, _ := http.NewRequest(http.MethodDelete, "/wishlists/1/42", nil)

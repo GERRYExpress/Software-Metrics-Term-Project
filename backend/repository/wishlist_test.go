@@ -57,7 +57,7 @@ func TestWishlistRepository_getWishlist(t *testing.T) {
 			"user_id", "product_id", "wishlist_date", "name", "price", "poster_url", "category_id", "category_name",
 		}).AddRow(1, 101, now, "Game 1", 29.99, "url1", 1, "Action")
 
-		mock.ExpectQuery("^SELECT(.*)FROM wishlists").WithArgs(1, 101).WillReturnRows(rows)
+		mock.ExpectQuery("^SELECT(.*)FROM wishlists").WithArgs(101, 1).WillReturnRows(rows)
 
 		wishlist, err := repo.getWishlist(1, 101)
 
@@ -68,7 +68,7 @@ func TestWishlistRepository_getWishlist(t *testing.T) {
 	})
 
 	t.Run("not found", func(t *testing.T) {
-		mock.ExpectQuery("^SELECT(.*)FROM wishlists").WithArgs(1, 999).WillReturnRows(sqlmock.NewRows([]string{}))
+		mock.ExpectQuery("^SELECT(.*)FROM wishlists").WithArgs(999, 1).WillReturnRows(sqlmock.NewRows([]string{}))
 
 		_, err := repo.getWishlist(1, 999)
 		assert.ErrorIs(t, err, sql.ErrNoRows)
@@ -91,7 +91,7 @@ func TestWishlistRepository_AddWishlist(t *testing.T) {
 			"user_id", "product_id", "wishlist_date", "name", "price", "poster_url", "category_id", "category_name",
 		}).AddRow(1, 101, now, "Game 1", 29.99, "url1", nil, nil)
 
-		mock.ExpectQuery("^SELECT(.*)FROM wishlists").WithArgs(1, 101).WillReturnRows(rows)
+		mock.ExpectQuery("^SELECT(.*)FROM wishlists").WithArgs(101, 1).WillReturnRows(rows)
 
 		wishlist, err := repo.AddWishlist(1, 101)
 		assert.NoError(t, err)
@@ -114,7 +114,7 @@ func TestWishlistRepository_DeleteWishlist(t *testing.T) {
 		mock.ExpectQuery("^SELECT(.*)FROM wishlists").WithArgs(101, 1).WillReturnRows(rows)
 
 		// 2. Expect the actual Delete execution
-		mock.ExpectExec("^DELETE FROM wishlists").WithArgs(1, 101).WillReturnResult(sqlmock.NewResult(0, 1))
+		mock.ExpectExec("^DELETE FROM wishlists").WithArgs(101, 1).WillReturnResult(sqlmock.NewResult(0, 1))
 
 		wishlist, err := repo.DeleteWishlist(1, 101)
 

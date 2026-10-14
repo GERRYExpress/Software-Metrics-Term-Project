@@ -68,7 +68,7 @@ func TestCartRepository_getCart(t *testing.T) {
 	})
 
 	t.Run("not found", func(t *testing.T) {
-		mock.ExpectQuery("^SELECT(.*)FROM carts").WithArgs(1, 999).WillReturnRows(sqlmock.NewRows([]string{}))
+		mock.ExpectQuery("^SELECT(.*)FROM carts").WithArgs(999, 1).WillReturnRows(sqlmock.NewRows([]string{}))
 
 		_, err := repo.getCart(1, 999)
 		assert.ErrorIs(t, err, sql.ErrNoRows)
@@ -91,7 +91,7 @@ func TestCartRepository_AddCart(t *testing.T) {
 			"user_id", "product_id", "cart_date", "name", "price", "poster_url", "category_id", "category_name",
 		}).AddRow(1, 101, now, "Game 1", 29.99, "url1", nil, nil)
 
-		mock.ExpectQuery("^SELECT(.*)FROM carts").WithArgs(1, 101).WillReturnRows(rows)
+		mock.ExpectQuery("^SELECT(.*)FROM carts").WithArgs(101, 1).WillReturnRows(rows)
 
 		cart, err := repo.AddCart(1, 101)
 		assert.NoError(t, err)
@@ -111,12 +111,10 @@ func TestCartRepository_DeleteCart(t *testing.T) {
 			"user_id", "product_id", "cart_date", "name", "price", "poster_url", "category_id", "category_name",
 		}).AddRow(1, 101, now, "Game 1", 29.99, "url1", nil, nil)
 
-		mock.ExpectQuery("^SELECT(.*)FROM carts").WithArgs(1, 101).WillReturnRows(rows)
+		mock.ExpectQuery("^SELECT(.*)FROM carts").WithArgs(101, 1).WillReturnRows(rows)
 
-		// 2. Expect the actual Delete execution
-		// Note: The original code uses undefined variables `cartUserFilter` and `cartProductFilter`
-		// inside the Delete query block. Assuming they map to user_id and product_id based on squirrel syntax.
-		mock.ExpectExec("^DELETE FROM carts").WithArgs(1, 101).WillReturnResult(sqlmock.NewResult(0, 1))
+		// 2. Expect the actual Delete execution (squirrel.Eq sorts keys: product_id, then user_id)
+		mock.ExpectExec("^DELETE FROM carts").WithArgs(101, 1).WillReturnResult(sqlmock.NewResult(0, 1))
 
 		cart, err := repo.DeleteCart(1, 101)
 
@@ -127,7 +125,7 @@ func TestCartRepository_DeleteCart(t *testing.T) {
 
 	t.Run("fails if cart does not exist", func(t *testing.T) {
 		// getCart returns nothing
-		mock.ExpectQuery("^SELECT(.*)FROM carts").WithArgs(1, 999).WillReturnRows(sqlmock.NewRows([]string{}))
+		mock.ExpectQuery("^SELECT(.*)FROM carts").WithArgs(999, 1).WillReturnRows(sqlmock.NewRows([]string{}))
 
 		_, err := repo.DeleteCart(1, 999)
 

@@ -45,7 +45,7 @@ func TestOrderRepository_Create(t *testing.T) {
 
 		// 2. Expect Order Insert
 		mock.ExpectExec("^INSERT INTO orders").
-			WithArgs(1, sqlmock.AnyArg(), "Credit Card", 59.99).
+			WithArgs(1, "Credit Card", 59.99).
 			WillReturnResult(sqlmock.NewResult(10, 1)) // Returns OrderID 10
 
 		// 3. Expect Game Items Insert (Loop)

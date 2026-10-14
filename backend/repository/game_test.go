@@ -105,7 +105,7 @@ func TestGameRepository_GetGame(t *testing.T) {
 			200, "http://img.com",
 		)
 
-		mock.ExpectQuery("^SELECT(.*)FROM products p").WithArgs(1).WillReturnRows(rows)
+		mock.ExpectQuery("^SELECT(.*)FROM products p").WithArgs(false, 1).WillReturnRows(rows) // c.is_hidden = false, then product_id
 
 		game, err := repo.GetGame(1)
 
@@ -159,13 +159,14 @@ func TestGameRepository_Create(t *testing.T) {
 			Media:      []model.Media{{MediaUrl: "url"}},
 		}
 
+		// Create runs two transactions: the product row, then its relations
 		mock.ExpectBegin()
 		mock.ExpectExec("^INSERT INTO products").WillReturnResult(sqlmock.NewResult(10, 1))
+		mock.ExpectCommit()
 
-		// Sub-inserts via insertGameRelationsTx
+		mock.ExpectBegin()
 		mock.ExpectExec("^INSERT INTO product_categories").WithArgs(10, 1).WillReturnResult(sqlmock.NewResult(1, 1))
 		mock.ExpectExec("^INSERT INTO media").WithArgs("url", 10).WillReturnResult(sqlmock.NewResult(1, 1))
-
 		mock.ExpectCommit()
 
 		created, err := repo.Create(game)

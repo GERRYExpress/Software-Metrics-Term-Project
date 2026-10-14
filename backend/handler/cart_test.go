@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/gin-gonic/gin"
@@ -43,6 +44,13 @@ func setupCartTest(t *testing.T) (*gin.Engine, sqlmock.Sqlmock, func()) {
 	return router, mock, fullCleanup
 }
 
+// getCartColumns returns the exact 8 columns expected by the repository's Scan.
+func getCartColumns() []string {
+	return []string{
+		"user_id", "product_id", "cart_date", "name", "price", "poster_url", "category_id", "category_name",
+	}
+}
+
 func TestCartHandler_GetCarts(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
@@ -50,9 +58,8 @@ func TestCartHandler_GetCarts(t *testing.T) {
 	defer cleanup()
 
 	t.Run("success - 200 OK", func(t *testing.T) {
-		// Mock the DB query expected by service.GetCarts(id)
-		rows := sqlmock.NewRows([]string{"id", "game_id"}).AddRow(1, 101)
-		mock.ExpectQuery("SELECT(.*)FROM").WithArgs(1).WillReturnRows(rows)
+		rows := sqlmock.NewRows(getCartColumns()).AddRow(1, 101, time.Now(), "Game 1", 29.99, "url1", nil, nil)
+		mock.ExpectQuery("SELECT(.*)FROM carts").WithArgs(1).WillReturnRows(rows)
 
 		w := httptest.NewRecorder()
 		req, _ := http.NewRequest(http.MethodGet, "/carts/1", nil)
@@ -78,8 +85,16 @@ func TestCartHandler_AddCart(t *testing.T) {
 	defer cleanup()
 
 	t.Run("success - 200 OK", func(t *testing.T) {
-		// Mock the DB insertion expected by service.AddCart
-		mock.ExpectExec("INSERT INTO").WithArgs(1, 42).WillReturnResult(sqlmock.NewResult(1, 1))
+		// 1. Mock the DB insertion expected by service.AddCart
+		mock.ExpectExec("INSERT INTO carts").
+			WithArgs(1, 42, sqlmock.AnyArg()).
+			WillReturnResult(sqlmock.NewResult(1, 1))
+
+		// 2. Mock the SELECT triggered by the internal getCart call
+		// Squirrel sorts Eq keys alphabetically: "ca.product_id" < "ca.user_id"
+		// Therefore, WithArgs must be (gameID, userID) -> (42, 1)
+		rows := sqlmock.NewRows(getCartColumns()).AddRow(1, 42, time.Now(), "Game 1", 29.99, "url1", nil, nil)
+		mock.ExpectQuery("SELECT(.*)FROM carts").WithArgs(42, 1).WillReturnRows(rows)
 
 		w := httptest.NewRecorder()
 		req, _ := http.NewRequest(http.MethodPost, "/carts/1/42", nil)
@@ -104,8 +119,13 @@ func TestCartHandler_DeleteCart(t *testing.T) {
 	defer cleanup()
 
 	t.Run("success - 200 OK", func(t *testing.T) {
-		// Mock the DB deletion expected by service.DeleteCart
-		mock.ExpectExec("DELETE FROM").WithArgs(1, 42).WillReturnResult(sqlmock.NewResult(0, 1))
+		// 1. Mock the initial SELECT triggered by getCart to verify existence
+		rows := sqlmock.NewRows(getCartColumns()).AddRow(1, 42, time.Now(), "Game 1", 29.99, "url1", nil, nil)
+		mock.ExpectQuery("SELECT(.*)FROM carts").WithArgs(42, 1).WillReturnRows(rows)
+
+		// 2. Mock the actual DELETE execution
+		// Squirrel Eq sorts "product_id" < "user_id", meaning arguments are (42, 1)
+		mock.ExpectExec("DELETE FROM carts").WithArgs(42, 1).WillReturnResult(sqlmock.NewResult(0, 1))
 
 		w := httptest.NewRecorder()
 		req, _ := http.NewRequest(http.MethodDelete, "/carts/1/42", nil)
