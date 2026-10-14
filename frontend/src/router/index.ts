@@ -16,7 +16,13 @@ import SellerProductFormView from '@/views/SellerProductFormView.vue'
 import SellerProfileView from '@/views/SellerProfileView.vue'
 import WishlistView from '@/views/WishlistView.vue'
 import nProgress from 'nprogress'
+import type { Component } from 'vue'
 import { createRouter, createWebHistory } from 'vue-router'
+
+// Leaf pages sharing { path, name, component, meta: { title, requiresAuth } }.
+function authedPage(path: string, name: string, component: Component, title: string) {
+  return { path, name, component, meta: { title, requiresAuth: true } }
+}
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -54,30 +60,10 @@ const router = createRouter({
             category: route.query.category ? route.query.category : ''
           })
         },
-        {
-          path: '/profile',
-          name: 'profile-view',
-          component: ProfileView,
-          meta: { title: 'Profile', requiresAuth: true }
-        },
-        {
-          path: '/carts',
-          name: 'cart-view',
-          component: CartView,
-          meta: { title: 'Carts', requiresAuth: true }
-        },
-        {
-          path: '/wishlists',
-          name: 'wishlist-view',
-          component: WishlistView,
-          meta: { title: 'Wishlists', requiresAuth: true }
-        },
-        {
-          path: '/contacts',
-          name: 'contact-view',
-          component: ContactView,
-          meta: { title: 'Contacts', requiresAuth: true }
-        },
+        authedPage('/profile', 'profile-view', ProfileView, 'Profile'),
+        authedPage('/carts', 'cart-view', CartView, 'Carts'),
+        authedPage('/wishlists', 'wishlist-view', WishlistView, 'Wishlists'),
+        authedPage('/contacts', 'contact-view', ContactView, 'Contacts'),
         {
           path: '/games/:id',
           name: 'game-detail-view',
@@ -105,30 +91,10 @@ const router = createRouter({
           path: '',
           redirect: { name: 'seller-dashboard-view' }
         },
-        {
-          path: 'dashboard',
-          name: 'seller-dashboard-view',
-          component: SellerDashboardView,
-          meta: { title: 'Seller Dashboard', requiresAuth: true }
-        },
-        {
-          path: 'products/add',
-          name: 'seller-product-add-view',
-          component: SellerProductFormView,
-          meta: { title: 'Add Product', requiresAuth: true }
-        },
-        {
-          path: 'products/:id/edit',
-          name: 'seller-product-edit-view',
-          component: SellerProductFormView,
-          meta: { title: 'Edit Product', requiresAuth: true }
-        },
-        {
-          path: 'profile',
-          name: 'seller-profile-view',
-          component: SellerProfileView,
-          meta: { title: 'Seller Profile', requiresAuth: true }
-        }
+        authedPage('dashboard', 'seller-dashboard-view', SellerDashboardView, 'Seller Dashboard'),
+        authedPage('products/add', 'seller-product-add-view', SellerProductFormView, 'Add Product'),
+        authedPage('products/:id/edit', 'seller-product-edit-view', SellerProductFormView, 'Edit Product'),
+        authedPage('profile', 'seller-profile-view', SellerProfileView, 'Seller Profile')
       ]
     }
   ],
