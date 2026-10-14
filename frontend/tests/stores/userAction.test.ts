@@ -1,95 +1,133 @@
+import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { useUserActionStore } from '@/stores/userAction'
+import { useUserActionStore } from '../../src/stores/userAction'
+import { useAuthStore } from '../../src/stores/auth'
+import CartService from '@/service/CartService'
+import WishlistService from '@/service/WishlistService'
+import type { AxiosResponse } from 'axios'
+import type { Cart, Wishlist, Account } from '@/types'
+
+vi.mock('@/service/CartService')
+vi.mock('@/service/WishlistService')
 
 describe('userAction store', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
-    vi.clearAllMocks()
     vi.useFakeTimers()
+    vi.clearAllMocks()
   })
 
   afterEach(() => {
     vi.useRealTimers()
   })
 
-  describe('initial state', () => {
-    it('has correct defaults', () => {
-      const store = useUserActionStore()
-      expect(store.cartIds).toEqual([])
-      expect(store.wishlistIds).toEqual([])
-      expect(store.activeNotification).toBeNull()
-      // isInitialized is a ref; in test env it may be unwrapped differently
-      expect(store.isInitialized === false || store.isInitialized === undefined).toBe(true)
-    })
+  it('notifies and clears notifications with timeouts', () => {
+    const store = useUserActionStore()
+    store.notify('Success message', 'success')
+    expect(store.activeNotification?.message).toBe('Success message')
+
+    store.clearNotification()
+    expect(store.activeNotification).toBeNull()
+
+    store.notify('Auto close')
+    vi.advanceTimersByTime(3200)
+    expect(store.activeNotification).toBeNull()
   })
 
-  describe('notify', () => {
-    it('sets notification with message and type', () => {
-      const store = useUserActionStore()
-      store.notify('Test message', 'cart')
+  it('fetches initial cart and wishlist data successfully', async () => {
+    const authStore = useAuthStore()
+    authStore.account = { id: 1 } as Account
 
-      expect(store.activeNotification).toMatchObject({
-        message: 'Test message',
-        type: 'cart'
-      })
-      expect(store.activeNotification?.id).toBeDefined()
-    })
+    const mockCartResponse = { data: [{ productId: 101 }] } as unknown as AxiosResponse<Cart[]>
+    const mockWishlistResponse = { data: [{ game: { id: 202 } }] } as unknown as AxiosResponse<Wishlist[]>
 
-    it('clears notification after timeout', () => {
-      const store = useUserActionStore()
-      store.notify('Test message')
+    vi.mocked(CartService.getCarts).mockResolvedValueOnce(mockCartResponse)
+    vi.mocked(WishlistService.getWishlists).mockResolvedValueOnce(mockWishlistResponse)
 
-      vi.advanceTimersByTime(3200)
+    const store = useUserActionStore()
+    store.fetchInitialData()
+    store.fetchInitialData() // Test early return guard
 
-      expect(store.activeNotification).toBeNull()
-    })
+    await vi.runAllTimersAsync()
 
-    it('resets timer on new notification', () => {
-      const store = useUserActionStore()
-      store.notify('First')
-      vi.advanceTimersByTime(2000)
-      store.notify('Second')
-
-      expect(store.activeNotification?.message).toBe('Second')
-
-      vi.advanceTimersByTime(2000)
-      expect(store.activeNotification).not.toBeNull()
-
-      vi.advanceTimersByTime(1200)
-      expect(store.activeNotification).toBeNull()
-    })
+    expect(store.cartIds).toContain(101)
+    expect(store.wishlistIds).toContain(202)
+    expect(store.isInCart(101)).toBe(true)
+    expect(store.isInWishlist(202)).toBe(true)
   })
 
-  describe('clearNotification', () => {
-    it('clears active notification and timer', () => {
-      const store = useUserActionStore()
-      store.notify('Test')
-      store.clearNotification()
+  it('handles offline/error catch blocks in fetchInitialData gracefully', async () => {
+    const authStore = useAuthStore()
+    authStore.account = { id: 1 } as Account
 
-      expect(store.activeNotification).toBeNull()
-      vi.advanceTimersByTime(5000)
-      expect(store.activeNotification).toBeNull()
-    })
+    vi.mocked(CartService.getCarts).mockRejectedValueOnce(new Error('Network error'))
+    vi.mocked(WishlistService.getWishlists).mockRejectedValueOnce(new Error('Network error'))
+
+    const store = useUserActionStore()
+    store.fetchInitialData()
+    await vi.runAllTimersAsync()
+
+    expect(store.cartIds).toEqual([])
   })
 
-  describe('isInCart', () => {
-    it('returns true if gameId in cart', () => {
-      const store = useUserActionStore()
-      store.cartIds = [1, 2, 3]
+  it('handles cart additions including already in cart and unauthenticated notifications', async () => {
+    const store = useUserActionStore()
+    store.cartIds.push(50)
 
-      expect(store.isInCart(2)).toBe(true)
-      expect(store.isInCart(4)).toBe(false)
-    })
+    store.addToCart(50, 'Game 50')
+    expect(store.activeNotification?.type).toBe('info')
+
+    store.cartIds = []
+    store.addToCart(60, 'Game 60')
+    expect(store.activeNotification?.message).toContain('Please sign in')
+
+    const authStore = useAuthStore()
+    authStore.account = { id: 1 } as Account
+    const emptyResponse = {} as unknown as AxiosResponse<void>
+    vi.mocked(CartService.addCart).mockResolvedValueOnce(emptyResponse)
+
+    store.addToCart(60, 'Game 60')
+    await vi.runAllTimersAsync()
+    expect(store.cartIds).toContain(60)
+
+    vi.mocked(CartService.addCart).mockRejectedValueOnce(new Error('fail'))
+    store.addToCart(70, 'Game 70')
+    await vi.runAllTimersAsync()
+    expect(store.cartIds).toContain(70)
   })
 
-  describe('isInWishlist', () => {
-    it('returns true if gameId in wishlist', () => {
-      const store = useUserActionStore()
-      store.wishlistIds = [5, 6]
+  it('handles toggleWishlist branch logic (add, remove, unauthenticated, error catches)', async () => {
+    const store = useUserActionStore()
+    const authStore = useAuthStore()
+    const emptyResponse = {} as unknown as AxiosResponse<void>
 
-      expect(store.isInWishlist(5)).toBe(true)
-      expect(store.isInWishlist(7)).toBe(false)
-    })
+    store.wishlistIds.push(10)
+    authStore.account = { id: 1 } as Account
+    vi.mocked(WishlistService.deleteWishlist).mockResolvedValueOnce(emptyResponse)
+
+    store.toggleWishlist(10, 'Game 10')
+    await vi.runAllTimersAsync()
+    expect(store.wishlistIds).not.toContain(10)
+
+    store.wishlistIds.push(20)
+    vi.mocked(WishlistService.deleteWishlist).mockRejectedValueOnce(new Error('fail'))
+    store.toggleWishlist(20, 'Game 20')
+    await vi.runAllTimersAsync()
+    expect(store.wishlistIds).not.toContain(20)
+
+    authStore.account = null
+    store.toggleWishlist(30, 'Game 30')
+    expect(store.activeNotification?.message).toContain('Please sign in')
+
+    authStore.account = { id: 1 } as Account
+    vi.mocked(WishlistService.addWishlist).mockResolvedValueOnce(emptyResponse)
+    store.toggleWishlist(30, 'Game 30')
+    await vi.runAllTimersAsync()
+    expect(store.wishlistIds).toContain(30)
+
+    vi.mocked(WishlistService.addWishlist).mockRejectedValueOnce(new Error('fail'))
+    store.toggleWishlist(40, 'Game 40')
+    await vi.runAllTimersAsync()
+    expect(store.wishlistIds).toContain(40)
   })
 })

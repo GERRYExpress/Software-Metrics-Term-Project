@@ -1,103 +1,248 @@
-import { mount } from '@vue/test-utils'
+import { mount, flushPromises } from '@vue/test-utils'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import LoginFormView from '../../src/views/LoginFormView.vue'
-import { setActivePinia, createPinia } from 'pinia'
+import LoginFormView from '@/views/LoginFormView.vue'
+import AccountService from '@/service/AccountService'
+import { createPinia, setActivePinia } from 'pinia'
+import { createRouter, createWebHistory } from 'vue-router'
+import type { AxiosResponse } from 'axios'
+import { useAuthStore } from '@/stores/auth'
 
 vi.mock('@/service/AccountService')
-
-const AuthMainContainerStub = {
-  name: 'AuthMainContainer',
-  template: '<div class="auth-main-container"><slot /></div>'
-}
-
-const AppCardStub = {
-  name: 'AppCard',
-  template: '<div class="app-card"><slot /></div>'
-}
-
-const BaseButtonStub = {
-  name: 'BaseButton',
-  template: '<button class="base-button" @click="$emit(\'click\')" :disabled="disabled"><slot /></button>',
-  props: ['disabled'],
-  emits: ['click']
-}
-
-const BaseInputStub = {
-  name: 'BaseInput',
-  template: '<input class="base-input" :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" :placeholder="placeholder" :type="type" :label="label" />',
-  props: ['modelValue', 'placeholder', 'type', 'label'],
-  emits: ['update:modelValue']
-}
-
-const BaseToggleStub = {
-  name: 'BaseToggle',
-  template: '<div class="base-toggle" @click="$emit(\'toggleRole\')"><slot /></div>',
-  props: ['modelValue', 'options'],
-  emits: ['toggleRole', 'update:modelValue']
-}
-
-const RouterLinkStub = {
-  name: 'RouterLink',
-  template: '<a class="router-link" :href="to"><slot /></a>',
-  props: ['to']
-}
-
-const UserRoundStub = { name: 'UserRound', template: '<svg />' }
-
-const global = {
-  stubs: {
-    AuthMainContainer: AuthMainContainerStub,
-    AppCard: AppCardStub,
-    BaseButton: BaseButtonStub,
-    BaseInput: BaseInputStub,
-    BaseToggle: BaseToggleStub,
-    RouterLink: RouterLinkStub,
-    UserRound: UserRoundStub
+vi.mock(import("vue-router"), async (importOriginal) => {
+  const actual = await importOriginal()
+  return {
+    ...actual,
+    // your mocked methods
   }
-}
+})
+describe('LoginFormView.vue', () => {
+  let router: ReturnType<typeof createRouter>
 
-describe('LoginFormView', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
+
+    router = createRouter({
+      history: createWebHistory(),
+      routes: [
+        { path: '/', name: 'landing-page-view', component: { template: '<div>Home</div>' } },
+        { path: '/login', name: 'login-view', component: LoginFormView },
+        { path: '/register', name: 'register-view', component: { template: '<div>Register</div>' } },
+        { path: '/seller', name: 'seller-dashboard-view', component: { template: '<div>Seller Dashboard</div>' } }
+      ]
+    })
   })
 
-  it('renders login form with username and password inputs', () => {
-    const wrapper = mount(LoginFormView, { global })
-    expect(wrapper.find('h1').text()).toBe('Welcome Back!')
-    expect(wrapper.findAllComponents(BaseInputStub)).toHaveLength(2)
-    expect(wrapper.findComponent(BaseToggleStub).exists()).toBe(true)
-    expect(wrapper.findComponent(BaseButtonStub).exists()).toBe(true)
+  it('renders login form elements correctly', async () => {
+    router.push('/login')
+    await router.isReady()
+
+    const wrapper = mount(LoginFormView, {
+      global: {
+        plugins: [router],
+        stubs: {
+          AuthMainContainer: { template: '<div><slot/></div>' },
+          AppCard: { template: '<div><slot/></div>' },
+          BaseInput: { 
+            template: '<input :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" :placeholder="placeholder" />',
+            props: ['modelValue', 'placeholder']
+          },
+          BaseToggle: { template: '<button @click="$emit(\'toggleRole\')">Toggle</button>' },
+          BaseButton: { template: '<button type="submit"><slot/></button>' },
+          UserRound: true
+        }
+      }
+    })
+
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('Welcome Back!')
+    expect(wrapper.find('form').exists()).toBe(true)
+    expect(wrapper.findAllComponents({ name: 'RouterLink' })).toHaveLength(2)
   })
 
-  it('shows link to register view', () => {
-    const wrapper = mount(LoginFormView, { global })
-    expect(wrapper.findComponent(RouterLinkStub).exists()).toBe(true)
-    expect(wrapper.text()).toContain('Sign up here')
+  it('toggles role correctly and updates router query', async () => {
+    router.push('/login')
+    await router.isReady()
+
+    const wrapper = mount(LoginFormView, {
+      global: {
+        plugins: [router],
+        stubs: {
+          AuthMainContainer: { template: '<div><slot/></div>' },
+          AppCard: { template: '<div><slot/></div>' },
+          BaseInput: true,
+          BaseToggle: { 
+            template: '<button class="toggle-btn" @click="$emit(\'toggleRole\')">Toggle</button>' 
+          },
+          BaseButton: true,
+          UserRound: true
+        }
+      }
+    })
+
+    await flushPromises()
+    await wrapper.find('.toggle-btn').trigger('click')
+    await flushPromises()
+
+    expect(router.currentRoute.value.query.role).toBe('true')
   })
 
-  it('shows back to home link', () => {
-    const wrapper = mount(LoginFormView, { global })
-    const backLink = wrapper.findComponent(RouterLinkStub)
-    expect(backLink.props('to')).toEqual({ name: 'landing-page-view' })
+  it('handles successful buyer login and navigates to landing page', async () => {
+    const authStore = useAuthStore()
+    const setSessionSpy = vi.spyOn(authStore, 'setSession')
+
+    vi.mocked(AccountService.authenticate).mockResolvedValueOnce({
+      data: {
+        account: { id: 1, username: 'buyer1' },
+        token: 'fake-jwt-token'
+      }
+    } as unknown as AxiosResponse)
+
+    router.push('/login')
+    await router.isReady()
+
+    const wrapper = mount(LoginFormView, {
+      global: {
+        plugins: [router],
+        stubs: {
+          AuthMainContainer: { template: '<div><slot/></div>' },
+          AppCard: { template: '<div><slot/></div>' },
+          BaseInput: { 
+            template: '<input :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />',
+            props: ['modelValue']
+          },
+          BaseToggle: true,
+          BaseButton: { template: '<button type="submit"><slot/></button>' },
+          UserRound: true
+        }
+      }
+    })
+
+    await flushPromises()
+
+    const inputs = wrapper.findAll('input')
+    await inputs[0].setValue('buyer1')
+    await inputs[1].setValue('password123')
+
+    await wrapper.find('form').trigger('submit.prevent')
+    await flushPromises()
+
+    expect(AccountService.authenticate).toHaveBeenCalledWith({
+      username: 'buyer1',
+      password: 'password123',
+      isSeller: false
+    })
+    expect(setSessionSpy).toHaveBeenCalledWith({ id: 1, username: 'buyer1' }, 'fake-jwt-token')
+    expect(router.currentRoute.value.name).toBe('landing-page-view')
   })
 
-  it('has Login button with correct text', () => {
-    const wrapper = mount(LoginFormView, { global })
-    const button = wrapper.findComponent(BaseButtonStub)
-    expect(button.text()).toBe('Login')
+  it('handles successful seller login and navigates to seller dashboard', async () => {
+    vi.mocked(AccountService.authenticate).mockResolvedValueOnce({
+      data: {
+        account: { id: 2, username: 'seller1', isSeller: true },
+        token: 'fake-jwt-token'
+      }
+    } as unknown as AxiosResponse)
+
+    router.push('/login')
+    await router.isReady()
+
+    const wrapper = mount(LoginFormView, {
+      global: {
+        plugins: [router],
+        stubs: {
+          AuthMainContainer: { template: '<div><slot/></div>' },
+          AppCard: { template: '<div><slot/></div>' },
+          BaseInput: { 
+            template: '<input :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />',
+            props: ['modelValue']
+          },
+          BaseToggle: { 
+            template: '<button class="toggle-btn" @click="$emit(\'toggleRole\')">Toggle</button>' 
+          },
+          BaseButton: { template: '<button type="submit"><slot/></button>' },
+          UserRound: true
+        }
+      }
+    })
+
+    await flushPromises()
+
+    await wrapper.find('.toggle-btn').trigger('click')
+
+    const inputs = wrapper.findAll('input')
+    await inputs[0].setValue('seller1')
+    await inputs[1].setValue('sellerpass')
+
+    await wrapper.find('form').trigger('submit.prevent')
+    await flushPromises()
+
+    expect(router.currentRoute.value.name).toBe('seller-dashboard-view')
   })
 
-  it('shows loading text when isLoading is true (via prop)', () => {
-    const wrapper = mount(LoginFormView, { global })
-    const button = wrapper.findComponent(BaseButtonStub)
-    // Test the button renders correctly with loading prop
-    expect(button.props('disabled')).toBe(false)
+  it('displays custom error message from API response on login failure', async () => {
+    const apiError = {
+      response: {
+        data: {
+          error: 'Invalid username or password.'
+        }
+      }
+    }
+    vi.mocked(AccountService.authenticate).mockRejectedValueOnce(apiError)
+
+    router.push('/login')
+    await router.isReady()
+
+    const wrapper = mount(LoginFormView, {
+      global: {
+        plugins: [router],
+        stubs: {
+          AuthMainContainer: { template: '<div><slot/></div>' },
+          AppCard: { template: '<div><slot/></div>' },
+          BaseInput: true,
+          BaseToggle: true,
+          BaseButton: { template: '<button type="submit"><slot/></button>' },
+          UserRound: true
+        }
+      }
+    })
+
+    await flushPromises()
+    await wrapper.find('form').trigger('submit.prevent')
+    await flushPromises()
+
+    const alertBox = wrapper.find('[role="alert"]')
+    expect(alertBox.exists()).toBe(true)
+    expect(alertBox.text()).toBe('Invalid username or password.')
   })
 
-  it('has correct toggle options', () => {
-    const wrapper = mount(LoginFormView, { global })
-    const toggle = wrapper.findComponent(BaseToggleStub)
-    expect(toggle.props('options')).toEqual(['Buyer', 'Seller'])
+  it('displays default fallback error message when API error has no response data', async () => {
+    vi.mocked(AccountService.authenticate).mockRejectedValueOnce(new Error('Network Error'))
+
+    router.push('/login')
+    await router.isReady()
+
+    const wrapper = mount(LoginFormView, {
+      global: {
+        plugins: [router],
+        stubs: {
+          AuthMainContainer: { template: '<div><slot/></div>' },
+          AppCard: { template: '<div><slot/></div>' },
+          BaseInput: true,
+          BaseToggle: true,
+          BaseButton: { template: '<button type="submit"><slot/></button>' },
+          UserRound: true
+        }
+      }
+    })
+
+    await flushPromises()
+    await wrapper.find('form').trigger('submit.prevent')
+    await flushPromises()
+
+    const alertBox = wrapper.find('[role="alert"]')
+    expect(alertBox.exists()).toBe(true)
+    expect(alertBox.text()).toBe('Unable to sign in. Check that the backend is running and try again.')
   })
 })
