@@ -2,24 +2,25 @@ import { mount } from '@vue/test-utils'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import ProfileView from '../../src/views/ProfileView.vue'
 import AccountService from '@/service/AccountService'
-import { createPinia, setActivePinia } from 'pinia'
-import { createRouter, createWebHistory } from 'vue-router'
 import type { AxiosResponse } from 'axios'
+import { createViewTestRouter, resetViewTestState, viewStubs } from './viewTestUtils'
 
 vi.mock('@/service/AccountService')
+vi.mock('vue-router', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('vue-router')>()
+  return {
+    ...actual,
+  }
+})
 
 describe('ProfileView.vue', () => {
-  const router = createRouter({
-    history: createWebHistory(),
-    routes: [
-      { path: '/profile', name: 'profile-view', component: ProfileView },
-      { path: '/login', name: 'login-view', component: { template: '<div>Login</div>' } }
-    ]
-  })
+  const router = createViewTestRouter([
+    { path: '/profile', name: 'profile-view', component: ProfileView },
+    { path: '/login', name: 'login-view', component: { template: '<div>Login</div>' } }
+  ])
 
   beforeEach(async () => {
-    setActivePinia(createPinia())
-    vi.clearAllMocks()
+    resetViewTestState()
     router.push('/profile')
     await router.isReady()
   })
@@ -27,24 +28,23 @@ describe('ProfileView.vue', () => {
   it('renders buyer profile details and handles logout and account deletion', async () => {
     const { useAuthStore } = await import('@/stores/auth')
     const authStore = useAuthStore()
-    authStore.account = {
-      id: 7,
-      username: 'TestBuyer',
-      createdDate: '2026-01-01T00:00:00.000Z',
-      totalSpend: 120.5,
-      totalGame: 4
+    const seedAccount = () => {
+      authStore.account = {
+        id: 7,
+        username: 'TestBuyer',
+        createdDate: '2026-01-01T00:00:00.000Z',
+        totalSpend: 120.5,
+        totalGame: 4
+      }
     }
+    seedAccount()
 
-    vi.mocked(AccountService.deleteAccount).mockResolvedValueOnce({} as unknown as AxiosResponse<void>)
+    vi.mocked(AccountService.deleteAccount).mockResolvedValue({} as unknown as AxiosResponse<void>)
 
     const wrapper = mount(ProfileView, {
       global: {
         plugins: [router],
-        stubs: {
-          AppCard: { template: '<div><slot/></div>' },
-          BaseButton: { template: '<button @click="$emit(\'click\')"><slot/></button>' },
-          ProductMainContainer: { template: '<div><slot/></div>' }
-        }
+        stubs: viewStubs
       }
     })
 
@@ -55,11 +55,14 @@ describe('ProfileView.vue', () => {
     const buttons = wrapper.findAll('button')
     // Click Logout button
     await buttons[0].trigger('click')
+    await new Promise(resolve => setTimeout(resolve, 10))
     expect(router.currentRoute.value.name).toBe('login-view')
 
-    // Reset router navigation back to profile for delete test
+    // Reset router navigation back to profile for delete test, and re-seed:
+    // logout above cleared the account that delete requires.
     router.push('/profile')
     await router.isReady()
+    seedAccount()
 
     // Click Delete My Account button to open modal
     await buttons[1].trigger('click')
