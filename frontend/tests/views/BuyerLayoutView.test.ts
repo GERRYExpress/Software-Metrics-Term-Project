@@ -1,8 +1,7 @@
 import { mount } from '@vue/test-utils'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import BuyerLayoutView from '../../src/views/BuyerLayoutView.vue'
-import { createPinia, setActivePinia } from 'pinia'
-import { createRouter, createWebHistory } from 'vue-router'
+import { createViewTestRouter, resetViewTestState, layoutStubs } from './viewTestUtils'
 
 vi.mock('vue-router', async (importOriginal) => {
   const actual = await importOriginal<typeof import('vue-router')>()
@@ -12,17 +11,13 @@ vi.mock('vue-router', async (importOriginal) => {
 })
 
 describe('BuyerLayoutView.vue', () => {
-  const router = createRouter({
-    history: createWebHistory(),
-    routes: [
-      { path: '/', name: 'landing-view', component: { template: '<div>Landing</div>' } },
-      { path: '/login', name: 'login-view', component: { template: '<div>Login</div>' } }
-    ]
-  })
+  const router = createViewTestRouter([
+    { path: '/', name: 'landing-view', component: { template: '<div>Landing</div>' } },
+    { path: '/login', name: 'login-view', component: { template: '<div>Login</div>' } }
+  ])
 
   beforeEach(() => {
-    setActivePinia(createPinia())
-    vi.clearAllMocks()
+    resetViewTestState()
   })
 
   it('renders layout components, calls fetchInitialData on mount, and handles session expiration modal', async () => {
@@ -36,16 +31,7 @@ describe('BuyerLayoutView.vue', () => {
     const wrapper = mount(BuyerLayoutView, {
       global: {
         plugins: [router],
-        stubs: {
-          AppNavbar: true,
-          AppFooter: true,
-          SessionExpiredModal: {
-            template: '<div class="session-modal" @click="$emit(\'confirm\')">Expired</div>',
-            props: ['show']
-          },
-          NotificationToast: true,
-          RouterView: true
-        }
+        stubs: layoutStubs('AppNavbar')
       }
     })
 

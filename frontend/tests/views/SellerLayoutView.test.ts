@@ -1,8 +1,7 @@
 import { mount } from '@vue/test-utils'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import SellerLayoutView from '../../src/views/SellerLayoutView.vue'
-import { createPinia, setActivePinia } from 'pinia'
-import { createRouter, createWebHistory } from 'vue-router'
+import { createViewTestRouter, resetViewTestState, layoutStubs } from './viewTestUtils'
 
 vi.mock('vue-router', async (importOriginal) => {
   const actual = await importOriginal<typeof import('vue-router')>()
@@ -11,17 +10,13 @@ vi.mock('vue-router', async (importOriginal) => {
   }
 })
 describe('SellerLayoutView.vue', () => {
-  const router = createRouter({
-    history: createWebHistory(),
-    routes: [
-      { path: '/seller', name: 'seller-dashboard-view', component: { template: '<div>Dashboard</div>' } },
-      { path: '/login', name: 'login-view', component: { template: '<div>Login</div>' } }
-    ]
-  })
+  const router = createViewTestRouter([
+    { path: '/seller', name: 'seller-dashboard-view', component: { template: '<div>Dashboard</div>' } },
+    { path: '/login', name: 'login-view', component: { template: '<div>Login</div>' } }
+  ])
 
   beforeEach(() => {
-    setActivePinia(createPinia())
-    vi.clearAllMocks()
+    resetViewTestState()
   })
 
   it('renders layout components and session expired modal when query parameter is set', async () => {
@@ -41,16 +36,7 @@ describe('SellerLayoutView.vue', () => {
     const wrapper = mount(SellerLayoutView, {
       global: {
         plugins: [router],
-        stubs: {
-          SellerNavbar: true,
-          AppFooter: true,
-          SessionExpiredModal: {
-            template: '<div class="session-modal" @click="$emit(\'confirm\')">Expired</div>',
-            props: ['show']
-          },
-          NotificationToast: true,
-          RouterView: true
-        }
+        stubs: layoutStubs('SellerNavbar')
       }
     })
 

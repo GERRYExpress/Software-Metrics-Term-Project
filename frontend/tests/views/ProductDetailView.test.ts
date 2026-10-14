@@ -1,77 +1,70 @@
 import { mount } from '@vue/test-utils'
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import ProfileView from '../../src/views/ProfileView.vue'
-import AccountService from '@/service/AccountService'
-import { createPinia, setActivePinia } from 'pinia'
-import { createRouter, createWebHistory } from 'vue-router'
-import type { AxiosResponse } from 'axios'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
+import ProductDetailView from '../../src/views/ProductDetailView.vue'
+import { resetViewTestState } from './viewTestUtils'
 
-vi.mock('@/service/AccountService')
-vi.mock('vue-router', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('vue-router')>()
-  return {
-    ...actual,
+describe('ProductDetailView.vue', () => {
+  beforeEach(() => {
+    resetViewTestState()
+  })
+
+  const seedGame = async () => {
+    const { useGameStore } = await import('@/stores/game')
+    const gameStore = useGameStore()
+    gameStore.save({
+      id: 42,
+      releaseDate: '2024-01-15',
+      categories: [{ id: 1, name: 'Action' }],
+      name: 'Test Game',
+      description: 'A great game',
+      price: 29.99,
+      posterUrl: 'https://example.com/poster.jpg',
+      account: { id: 1, username: 'seller' },
+      hardwareRequirement: null,
+      media: null
+    })
   }
-})
 
-describe('ProfileView.vue', () => {
-  const router = createRouter({
-    history: createWebHistory(),
-    routes: [
-      { path: '/profile', name: 'profile-view', component: ProfileView },
-      { path: '/login', name: 'login-view', component: { template: '<div>Login</div>' } }
-    ]
-  })
-
-  beforeEach(async () => {
-    setActivePinia(createPinia())
-    vi.clearAllMocks()
-    router.push('/profile')
-    await router.isReady()
-  })
-
-  it('renders buyer profile details and handles logout and account deletion', async () => {
-    const { useAuthStore } = await import('@/stores/auth')
-    const authStore = useAuthStore()
-    authStore.account = {
-      id: 7,
-      username: 'TestBuyer',
-      createdDate: '2026-01-01T00:00:00.000Z',
-      totalSpend: 120.5,
-      totalGame: 4
-    }
-
-    vi.mocked(AccountService.deleteAccount).mockResolvedValueOnce({} as unknown as AxiosResponse<void>)
-
-    const wrapper = mount(ProfileView, {
+  const mountDetail = () =>
+    mount(ProductDetailView, {
       global: {
-        plugins: [router],
         stubs: {
-          AppCard: { template: '<div><slot/></div>' },
-          BaseButton: { template: '<button @click="$emit(\'click\')"><slot/></button>' },
           ProductMainContainer: { template: '<div><slot/></div>' },
-          img: true
+          AppCard: { template: '<div><slot/></div>' },
+          BaseButton: { template: '<button @click="$emit(\'click\', $event)"><slot/></button>' },
+          MediaCarousel: true,
+          SystemRequirement: true,
+          RouterLink: { template: '<a><slot/></a>' },
+          Image: true,
+          Check: true,
+          Heart: true
         }
       }
     })
 
-    expect(wrapper.text()).toContain('TestBuyer')
-    expect(wrapper.text()).toContain('$120.50')
-    expect(wrapper.text()).toContain('4')
+  it('renders game details from the store', async () => {
+    await seedGame()
+    const wrapper = mountDetail()
 
+    expect(wrapper.text()).toContain('Test Game')
+    expect(wrapper.text()).toContain('A great game')
+    expect(wrapper.text()).toContain('$29.99')
+    expect(wrapper.text()).toContain('seller')
+  })
+
+  it('dispatches add-to-cart and wishlist actions via the store', async () => {
+    await seedGame()
+    const { useUserActionStore } = await import('@/stores/userAction')
+    const userActionStore = useUserActionStore()
+    const addToCartSpy = vi.spyOn(userActionStore, 'addToCart')
+    const wishlistSpy = vi.spyOn(userActionStore, 'toggleWishlist')
+
+    const wrapper = mountDetail()
     const buttons = wrapper.findAll('button')
-    await buttons[0].trigger('click')
-    expect(router.currentRoute.value.name).toBe('login-view')
+    await buttons[0].trigger('click', { preventDefault: () => {} })
+    await buttons[1].trigger('click', { preventDefault: () => {} })
 
-    router.push('/profile')
-    await router.isReady()
-
-    await buttons[1].trigger('click')
-    expect(wrapper.text()).toContain('Are you sure?')
-
-    const modalConfirmButton = wrapper.findAll('button')[wrapper.findAll('button').length - 1]
-    await modalConfirmButton.trigger('click')
-
-    expect(AccountService.deleteAccount).toHaveBeenCalledWith(7)
+    expect(addToCartSpy).toHaveBeenCalledWith(42, 'Test Game')
+    expect(wishlistSpy).toHaveBeenCalledWith(42, 'Test Game')
   })
 })

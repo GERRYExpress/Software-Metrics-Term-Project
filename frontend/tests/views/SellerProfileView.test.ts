@@ -1,8 +1,7 @@
 import { mount } from '@vue/test-utils'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import SellerProfileView from '../../src/views/SellerProfileView.vue'
-import { createPinia, setActivePinia } from 'pinia'
-import { createRouter, createWebHistory } from 'vue-router'
+import { createViewTestRouter, resetViewTestState, viewStubs } from './viewTestUtils'
 
 vi.mock('vue-router', async (importOriginal) => {
   const actual = await importOriginal<typeof import('vue-router')>()
@@ -11,17 +10,13 @@ vi.mock('vue-router', async (importOriginal) => {
   }
 })
 describe('SellerProfileView.vue', () => {
-  const router = createRouter({
-    history: createWebHistory(),
-    routes: [
-      { path: '/seller/profile', name: 'seller-profile-view', component: SellerProfileView },
-      { path: '/login', name: 'login-view', component: { template: '<div>Login</div>' } }
-    ]
-  })
+  const router = createViewTestRouter([
+    { path: '/seller/profile', name: 'seller-profile-view', component: SellerProfileView },
+    { path: '/login', name: 'login-view', component: { template: '<div>Login</div>' } }
+  ])
 
   beforeEach(() => {
-    setActivePinia(createPinia())
-    vi.clearAllMocks()
+    resetViewTestState()
   })
 
   it('renders seller profile details and handles logout', async () => {
@@ -41,18 +36,12 @@ describe('SellerProfileView.vue', () => {
     const wrapper = mount(SellerProfileView, {
       global: {
         plugins: [router],
-        stubs: {
-          AppCard: { template: '<div><slot/></div>' },
-          BaseButton: { template: '<button @click="$emit(\'click\')"><slot/></button>' },
-          ProductMainContainer: { template: '<div><slot/></div>' }
-        }
+        stubs: viewStubs
       }
     })
 
     await new Promise(resolve => setTimeout(resolve, 10))
 
-    expect(wrapper.text()).toContain('ProfileLogoutDelete my account')
-    expect(wrapper.text()).toContain('ProfileLogoutDelete my account')
     expect(wrapper.text()).toContain('ProfileLogoutDelete my account')
 
     const logoutButton = wrapper.findAll('button')[0]
