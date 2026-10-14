@@ -1,10 +1,10 @@
-import { mount, flushPromises } from '@vue/test-utils'
+import { flushPromises } from '@vue/test-utils'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import SellerDashboardView from '../../src/views/SellerDashboardView.vue'
 import CategoryService from '../../src/service/CategoryService'
 import GameService from '../../src/service/GameService'
-import { createPinia, setActivePinia } from 'pinia'
-import { createRouter, createWebHistory } from 'vue-router'
+import type { Router } from 'vue-router'
+import { createViewTestRouter, resetViewTestState, mountView } from './viewTestUtils'
 import type { AxiosResponse } from 'axios'
 import type { Category, Game, Account } from '@/types'
 
@@ -18,21 +18,27 @@ vi.mock(import("vue-router"), async (importOriginal) => {
   }
 })
 describe('SellerDashboardView.vue', () => {
-  let router: ReturnType<typeof createRouter>
+  let router: Router
 
-  beforeEach(async () => {
-    setActivePinia(createPinia())
-    vi.clearAllMocks()
+  const sellerDashboardStubs = {
+    AppCard: { template: '<div><slot/></div>' },
+    BaseButton: { template: '<button @click="$emit(\'click\')"><slot/></button>' },
+    BaseInput: true,
+    ProductMainContainer: { template: '<div><slot/></div>' },
+    CategoryTable: true,
+    Image: true,
+    Plus: true
+  }
+
+  beforeEach(() => {
+    resetViewTestState()
     Element.prototype.scrollIntoView = vi.fn()
 
-    router = createRouter({
-      history: createWebHistory(),
-      routes: [
-        { path: '/seller', name: 'seller-dashboard-view', component: SellerDashboardView },
-        { path: '/seller/add', name: 'seller-product-add-view', component: { template: '<div>Add</div>' } },
-        { path: '/seller/edit/:id', name: 'seller-product-edit-view', component: { template: '<div>Edit</div>' } }
-      ]
-    })
+    router = createViewTestRouter([
+      { path: '/seller', name: 'seller-dashboard-view', component: SellerDashboardView },
+      { path: '/seller/add', name: 'seller-product-add-view', component: { template: '<div>Add</div>' } },
+      { path: '/seller/edit/:id', name: 'seller-product-edit-view', component: { template: '<div>Edit</div>' } }
+    ])
   })
 
   it('loads dashboard successfully with categories and products', async () => {
@@ -57,25 +63,16 @@ describe('SellerDashboardView.vue', () => {
     authStore.token = 'fake-token'
     sellerStore.account = mockAccount
 
-    router.push('/seller')
-    await router.isReady()
+    const wrapper = await mountView(SellerDashboardView, router, {
+      AppCard: { template: '<div><slot/></div>' },
+      BaseButton: { template: '<button @click="$emit(\'click\')"><slot/></button>' },
+      BaseInput: { template: '<input />' },
+      ProductMainContainer: { template: '<div><slot/></div>' },
+      CategoryTable: { template: '<div class="category-table"></div>' },
+      Image: { template: '<img />' },
+      Plus: true
+    }, '/seller')
 
-    const wrapper = mount(SellerDashboardView, {
-      global: {
-        plugins: [router],
-        stubs: {
-          AppCard: { template: '<div><slot/></div>' },
-          BaseButton: { template: '<button @click="$emit(\'click\')"><slot/></button>' },
-          BaseInput: { template: '<input />' },
-          ProductMainContainer: { template: '<div><slot/></div>' },
-          CategoryTable: { template: '<div class="category-table"></div>' },
-          Image: { template: '<img />' },
-          Plus: true
-        }
-      }
-    })
-
-    await flushPromises()
     expect(wrapper.text()).toContain('Game 1')
     expect(wrapper.text()).toContain('$19.99')
   })
@@ -90,25 +87,8 @@ describe('SellerDashboardView.vue', () => {
     sellerStore.account = null as unknown as Account
     vi.spyOn(sellerStore, 'loadSeller').mockResolvedValueOnce(null as unknown as Account)
 
-    router.push('/seller')
-    await router.isReady()
+    const wrapper = await mountView(SellerDashboardView, router, sellerDashboardStubs, '/seller')
 
-    const wrapper = mount(SellerDashboardView, {
-      global: {
-        plugins: [router],
-        stubs: {
-          AppCard: { template: '<div><slot/></div>' },
-          BaseButton: { template: '<button @click="$emit(\'click\')"><slot/></button>' },
-          BaseInput: true,
-          ProductMainContainer: { template: '<div><slot/></div>' },
-          CategoryTable: true,
-          Image: true,
-          Plus: true
-        }
-      }
-    })
-
-    await flushPromises()
     expect(wrapper.text()).toContain('No seller account is logged in.')
   })
 
@@ -126,28 +106,18 @@ describe('SellerDashboardView.vue', () => {
     authStore.account = mockAccount
     sellerStore.account = mockAccount
 
-    router.push('/seller')
-    await router.isReady()
-
-    const wrapper = mount(SellerDashboardView, {
-      global: {
-        plugins: [router],
-        stubs: {
-          AppCard: { template: '<div><slot/></div>' },
-          BaseButton: { template: '<button type="submit" @click="$emit(\'click\')"><slot/></button>' },
-          BaseInput: { 
-            template: '<input :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />', 
-            props: ['modelValue'] 
-          },
-          ProductMainContainer: { template: '<div><slot/></div>' },
-          CategoryTable: true,
-          Image: true,
-          Plus: true
-        }
-      }
-    })
-
-    await flushPromises()
+    const wrapper = await mountView(SellerDashboardView, router, {
+      AppCard: { template: '<div><slot/></div>' },
+      BaseButton: { template: '<button type="submit" @click="$emit(\'click\')"><slot/></button>' },
+      BaseInput: { 
+        template: '<input :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />', 
+        props: ['modelValue'] 
+      },
+      ProductMainContainer: { template: '<div><slot/></div>' },
+      CategoryTable: true,
+      Image: true,
+      Plus: true
+    }, '/seller')
 
     const form = wrapper.find('form')
     expect(form.exists()).toBe(true)
@@ -190,25 +160,7 @@ describe('SellerDashboardView.vue', () => {
     authStore.account = mockAccount
     sellerStore.account = mockAccount
 
-    router.push('/seller')
-    await router.isReady()
-
-    const wrapper = mount(SellerDashboardView, {
-      global: {
-        plugins: [router],
-        stubs: {
-          AppCard: { template: '<div><slot/></div>' },
-          BaseButton: { template: '<button @click="$emit(\'click\')"><slot/></button>' },
-          BaseInput: true,
-          ProductMainContainer: { template: '<div><slot/></div>' },
-          CategoryTable: true,
-          Image: true,
-          Plus: true
-        }
-      }
-    })
-
-    await flushPromises()
+    const wrapper = await mountView(SellerDashboardView, router, sellerDashboardStubs, '/seller')
 
     const nextBtn = wrapper.findAll('button').find(b => b.text().includes('Next') || b.attributes('aria-label')?.includes('Next'))
     if (nextBtn) {
@@ -240,25 +192,7 @@ describe('SellerDashboardView.vue', () => {
     vi.spyOn(window, 'confirm').mockReturnValue(true)
     vi.mocked(GameService.deleteGame).mockResolvedValueOnce({} as unknown as AxiosResponse<void>)
 
-    router.push('/seller')
-    await router.isReady()
-
-    const wrapper = mount(SellerDashboardView, {
-      global: {
-        plugins: [router],
-        stubs: {
-          AppCard: { template: '<div><slot/></div>' },
-          BaseButton: { template: '<button @click="$emit(\'click\')"><slot/></button>' },
-          BaseInput: true,
-          ProductMainContainer: { template: '<div><slot/></div>' },
-          CategoryTable: true,
-          Image: true,
-          Plus: true
-        }
-      }
-    })
-
-    await flushPromises()
+    const wrapper = await mountView(SellerDashboardView, router, sellerDashboardStubs, '/seller')
 
     const deleteBtn = wrapper.findAll('button').find(b => b.text().includes('Delete'))
     if (deleteBtn) {

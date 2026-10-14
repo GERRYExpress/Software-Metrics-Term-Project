@@ -1,6 +1,8 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { vi } from 'vitest'
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
+import { mount, flushPromises } from '@vue/test-utils'
+import type { Router } from 'vue-router'
 
 // Shared scaffolding for view tests: real-router factory, common component
 // stubs, and Pinia reset. Replaces the copy-pasted setup blocks.
@@ -32,4 +34,12 @@ export function layoutStubs(navbar: string) {
     NotificationToast: true,
     RouterView: true
   }
+}
+
+export async function mountView(component: any, router: Router, stubs: Record<string, any>, path: string) {
+  router.push(path)
+  await router.isReady()
+  const wrapper = mount(component, { global: { plugins: [router], stubs } })
+  await flushPromises()
+  return wrapper
 }

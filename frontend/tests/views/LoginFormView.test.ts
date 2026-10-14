@@ -1,9 +1,9 @@
-import { mount, flushPromises } from '@vue/test-utils'
+import { flushPromises } from '@vue/test-utils'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import LoginFormView from '@/views/LoginFormView.vue'
 import AccountService from '@/service/AccountService'
-import { createPinia, setActivePinia } from 'pinia'
-import { createRouter, createWebHistory } from 'vue-router'
+import type { Router } from 'vue-router'
+import { createViewTestRouter, resetViewTestState, mountView } from './viewTestUtils'
 import type { AxiosResponse } from 'axios'
 import { useAuthStore } from '@/stores/auth'
 
@@ -16,45 +16,40 @@ vi.mock(import("vue-router"), async (importOriginal) => {
   }
 })
 describe('LoginFormView.vue', () => {
-  let router: ReturnType<typeof createRouter>
+  let router: Router
 
-  beforeEach(async () => {
-    setActivePinia(createPinia())
-    vi.clearAllMocks()
+  const loginErrorStubs = {
+    AuthMainContainer: { template: '<div><slot/></div>' },
+    AppCard: { template: '<div><slot/></div>' },
+    BaseInput: true,
+    BaseToggle: true,
+    BaseButton: { template: '<button type="submit"><slot/></button>' },
+    UserRound: true
+  }
 
-    router = createRouter({
-      history: createWebHistory(),
-      routes: [
-        { path: '/', name: 'landing-page-view', component: { template: '<div>Home</div>' } },
-        { path: '/login', name: 'login-view', component: LoginFormView },
-        { path: '/register', name: 'register-view', component: { template: '<div>Register</div>' } },
-        { path: '/seller', name: 'seller-dashboard-view', component: { template: '<div>Seller Dashboard</div>' } }
-      ]
-    })
+  beforeEach(() => {
+    resetViewTestState()
+
+    router = createViewTestRouter([
+      { path: '/', name: 'landing-page-view', component: { template: '<div>Home</div>' } },
+      { path: '/login', name: 'login-view', component: LoginFormView },
+      { path: '/register', name: 'register-view', component: { template: '<div>Register</div>' } },
+      { path: '/seller', name: 'seller-dashboard-view', component: { template: '<div>Seller Dashboard</div>' } }
+    ])
   })
 
   it('renders login form elements correctly', async () => {
-    router.push('/login')
-    await router.isReady()
-
-    const wrapper = mount(LoginFormView, {
-      global: {
-        plugins: [router],
-        stubs: {
-          AuthMainContainer: { template: '<div><slot/></div>' },
-          AppCard: { template: '<div><slot/></div>' },
-          BaseInput: { 
-            template: '<input :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" :placeholder="placeholder" />',
-            props: ['modelValue', 'placeholder']
-          },
-          BaseToggle: { template: '<button @click="$emit(\'toggleRole\')">Toggle</button>' },
-          BaseButton: { template: '<button type="submit"><slot/></button>' },
-          UserRound: true
-        }
-      }
-    })
-
-    await flushPromises()
+    const wrapper = await mountView(LoginFormView, router, {
+      AuthMainContainer: { template: '<div><slot/></div>' },
+      AppCard: { template: '<div><slot/></div>' },
+      BaseInput: { 
+        template: '<input :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" :placeholder="placeholder" />',
+        props: ['modelValue', 'placeholder']
+      },
+      BaseToggle: { template: '<button @click="$emit(\'toggleRole\')">Toggle</button>' },
+      BaseButton: { template: '<button type="submit"><slot/></button>' },
+      UserRound: true
+    }, '/login')
 
     expect(wrapper.text()).toContain('Welcome Back!')
     expect(wrapper.find('form').exists()).toBe(true)
@@ -62,26 +57,17 @@ describe('LoginFormView.vue', () => {
   })
 
   it('toggles role correctly and updates router query', async () => {
-    router.push('/login')
-    await router.isReady()
+    const wrapper = await mountView(LoginFormView, router, {
+      AuthMainContainer: { template: '<div><slot/></div>' },
+      AppCard: { template: '<div><slot/></div>' },
+      BaseInput: true,
+      BaseToggle: { 
+        template: '<button class="toggle-btn" @click="$emit(\'toggleRole\')">Toggle</button>' 
+      },
+      BaseButton: true,
+      UserRound: true
+    }, '/login')
 
-    const wrapper = mount(LoginFormView, {
-      global: {
-        plugins: [router],
-        stubs: {
-          AuthMainContainer: { template: '<div><slot/></div>' },
-          AppCard: { template: '<div><slot/></div>' },
-          BaseInput: true,
-          BaseToggle: { 
-            template: '<button class="toggle-btn" @click="$emit(\'toggleRole\')">Toggle</button>' 
-          },
-          BaseButton: true,
-          UserRound: true
-        }
-      }
-    })
-
-    await flushPromises()
     await wrapper.find('.toggle-btn').trigger('click')
     await flushPromises()
 
@@ -99,27 +85,17 @@ describe('LoginFormView.vue', () => {
       }
     } as unknown as AxiosResponse)
 
-    router.push('/login')
-    await router.isReady()
-
-    const wrapper = mount(LoginFormView, {
-      global: {
-        plugins: [router],
-        stubs: {
-          AuthMainContainer: { template: '<div><slot/></div>' },
-          AppCard: { template: '<div><slot/></div>' },
-          BaseInput: { 
-            template: '<input :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />',
-            props: ['modelValue']
-          },
-          BaseToggle: true,
-          BaseButton: { template: '<button type="submit"><slot/></button>' },
-          UserRound: true
-        }
-      }
-    })
-
-    await flushPromises()
+    const wrapper = await mountView(LoginFormView, router, {
+      AuthMainContainer: { template: '<div><slot/></div>' },
+      AppCard: { template: '<div><slot/></div>' },
+      BaseInput: { 
+        template: '<input :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />',
+        props: ['modelValue']
+      },
+      BaseToggle: true,
+      BaseButton: { template: '<button type="submit"><slot/></button>' },
+      UserRound: true
+    }, '/login')
 
     const inputs = wrapper.findAll('input')
     await inputs[0].setValue('buyer1')
@@ -145,29 +121,19 @@ describe('LoginFormView.vue', () => {
       }
     } as unknown as AxiosResponse)
 
-    router.push('/login')
-    await router.isReady()
-
-    const wrapper = mount(LoginFormView, {
-      global: {
-        plugins: [router],
-        stubs: {
-          AuthMainContainer: { template: '<div><slot/></div>' },
-          AppCard: { template: '<div><slot/></div>' },
-          BaseInput: { 
-            template: '<input :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />',
-            props: ['modelValue']
-          },
-          BaseToggle: { 
-            template: '<button class="toggle-btn" @click="$emit(\'toggleRole\')">Toggle</button>' 
-          },
-          BaseButton: { template: '<button type="submit"><slot/></button>' },
-          UserRound: true
-        }
-      }
-    })
-
-    await flushPromises()
+    const wrapper = await mountView(LoginFormView, router, {
+      AuthMainContainer: { template: '<div><slot/></div>' },
+      AppCard: { template: '<div><slot/></div>' },
+      BaseInput: { 
+        template: '<input :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />',
+        props: ['modelValue']
+      },
+      BaseToggle: { 
+        template: '<button class="toggle-btn" @click="$emit(\'toggleRole\')">Toggle</button>' 
+      },
+      BaseButton: { template: '<button type="submit"><slot/></button>' },
+      UserRound: true
+    }, '/login')
 
     await wrapper.find('.toggle-btn').trigger('click')
 
@@ -191,24 +157,7 @@ describe('LoginFormView.vue', () => {
     }
     vi.mocked(AccountService.authenticate).mockRejectedValueOnce(apiError)
 
-    router.push('/login')
-    await router.isReady()
-
-    const wrapper = mount(LoginFormView, {
-      global: {
-        plugins: [router],
-        stubs: {
-          AuthMainContainer: { template: '<div><slot/></div>' },
-          AppCard: { template: '<div><slot/></div>' },
-          BaseInput: true,
-          BaseToggle: true,
-          BaseButton: { template: '<button type="submit"><slot/></button>' },
-          UserRound: true
-        }
-      }
-    })
-
-    await flushPromises()
+    const wrapper = await mountView(LoginFormView, router, loginErrorStubs, '/login')
     await wrapper.find('form').trigger('submit.prevent')
     await flushPromises()
 
@@ -220,24 +169,7 @@ describe('LoginFormView.vue', () => {
   it('displays default fallback error message when API error has no response data', async () => {
     vi.mocked(AccountService.authenticate).mockRejectedValueOnce(new Error('Network Error'))
 
-    router.push('/login')
-    await router.isReady()
-
-    const wrapper = mount(LoginFormView, {
-      global: {
-        plugins: [router],
-        stubs: {
-          AuthMainContainer: { template: '<div><slot/></div>' },
-          AppCard: { template: '<div><slot/></div>' },
-          BaseInput: true,
-          BaseToggle: true,
-          BaseButton: { template: '<button type="submit"><slot/></button>' },
-          UserRound: true
-        }
-      }
-    })
-
-    await flushPromises()
+    const wrapper = await mountView(LoginFormView, router, loginErrorStubs, '/login')
     await wrapper.find('form').trigger('submit.prevent')
     await flushPromises()
 

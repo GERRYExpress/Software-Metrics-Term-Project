@@ -1,10 +1,10 @@
-import { mount, flushPromises } from '@vue/test-utils'
+import { flushPromises } from '@vue/test-utils'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import SellerProductFormView from '../../src/views/SellerProductFormView.vue'
 import CategoryService from '../../src/service/CategoryService'
 import GameService from '../../src/service/GameService'
-import { createPinia, setActivePinia } from 'pinia'
-import { createRouter, createWebHistory } from 'vue-router'
+import type { Router } from 'vue-router'
+import { createViewTestRouter, resetViewTestState, mountView } from './viewTestUtils'
 import type { AxiosResponse } from 'axios'
 import type { Category, GameDetail, Account, GameInput } from '@/types'
 
@@ -18,21 +18,25 @@ vi.mock(import("vue-router"), async (importOriginal) => {
   }
 })
 describe('SellerProductFormView.vue', () => {
-  let router: ReturnType<typeof createRouter>
+  let router: Router
 
-  beforeEach(async () => {
-    setActivePinia(createPinia())
-    vi.clearAllMocks()
+  const sellerProductFormStubs = {
+    AppCard: { template: '<div><slot/></div>' },
+    BaseButton: { template: '<button type="submit"><slot/></button>' },
+    BaseInput: true,
+    ProductMainContainer: { template: '<div><slot/></div>' },
+    GalleryUploadCard: { template: '<div></div>' }
+  }
+
+  beforeEach(() => {
+    resetViewTestState()
     Element.prototype.scrollIntoView = vi.fn()
 
-    router = createRouter({
-      history: createWebHistory(),
-      routes: [
-        { path: '/seller/add', name: 'seller-product-add-view', component: SellerProductFormView },
-        { path: '/seller/edit/:id', name: 'seller-product-edit-view', component: SellerProductFormView },
-        { path: '/seller', name: 'seller-dashboard-view', component: { template: '<div>Dashboard</div>' } }
-      ]
-    })
+    router = createViewTestRouter([
+      { path: '/seller/add', name: 'seller-product-add-view', component: SellerProductFormView },
+      { path: '/seller/edit/:id', name: 'seller-product-edit-view', component: SellerProductFormView },
+      { path: '/seller', name: 'seller-dashboard-view', component: { template: '<div>Dashboard</div>' } }
+    ])
   })
 
   it('loads add product form successfully', async () => {
@@ -44,23 +48,14 @@ describe('SellerProductFormView.vue', () => {
     const sellerStore = useSellerStore()
     sellerStore.account = { id: 1 } as unknown as Account
 
-    router.push('/seller/add')
-    await router.isReady()
+    const wrapper = await mountView(SellerProductFormView, router, {
+      AppCard: { template: '<div><slot/></div>' },
+      BaseButton: { template: '<button @click="$emit(\'click\')"><slot/></button>' },
+      BaseInput: { template: '<input />' },
+      ProductMainContainer: { template: '<div><slot/></div>' },
+      GalleryUploadCard: { template: '<div></div>' }
+    }, '/seller/add')
 
-    const wrapper = mount(SellerProductFormView, {
-      global: {
-        plugins: [router],
-        stubs: {
-          AppCard: { template: '<div><slot/></div>' },
-          BaseButton: { template: '<button @click="$emit(\'click\')"><slot/></button>' },
-          BaseInput: { template: '<input />' },
-          ProductMainContainer: { template: '<div><slot/></div>' },
-          GalleryUploadCard: { template: '<div></div>' }
-        }
-      }
-    })
-
-    await flushPromises()
     expect(wrapper.text()).toContain('Add product')
   })
 
@@ -73,23 +68,7 @@ describe('SellerProductFormView.vue', () => {
     const sellerStore = useSellerStore()
     sellerStore.account = { id: 1 } as unknown as Account
 
-    router.push('/seller/add')
-    await router.isReady()
-
-    const wrapper = mount(SellerProductFormView, {
-      global: {
-        plugins: [router],
-        stubs: {
-          AppCard: { template: '<div><slot/></div>' },
-          BaseButton: { template: '<button type="submit"><slot/></button>' },
-          BaseInput: true,
-          ProductMainContainer: { template: '<div><slot/></div>' },
-          GalleryUploadCard: { template: '<div></div>' }
-        }
-      }
-    })
-
-    await flushPromises()
+    const wrapper = await mountView(SellerProductFormView, router, sellerProductFormStubs, '/seller/add')
 
     const form = wrapper.find('form')
     await form.trigger('submit.prevent')
@@ -108,23 +87,7 @@ describe('SellerProductFormView.vue', () => {
 
     vi.mocked(GameService.createGame).mockResolvedValueOnce({} as unknown as AxiosResponse<void>)
 
-    router.push('/seller/add')
-    await router.isReady()
-
-    const wrapper = mount(SellerProductFormView, {
-      global: {
-        plugins: [router],
-        stubs: {
-          AppCard: { template: '<div><slot/></div>' },
-          BaseButton: { template: '<button type="submit"><slot/></button>' },
-          BaseInput: true,
-          ProductMainContainer: { template: '<div><slot/></div>' },
-          GalleryUploadCard: { template: '<div></div>' }
-        }
-      }
-    })
-
-    await flushPromises()
+    const wrapper = await mountView(SellerProductFormView, router, sellerProductFormStubs, '/seller/add')
 
     interface FormComponentVm {
       form: GameInput
@@ -167,23 +130,8 @@ describe('SellerProductFormView.vue', () => {
     const sellerStore = useSellerStore()
     sellerStore.account = { id: 1 } as unknown as Account
 
-    router.push('/seller/edit/5')
-    await router.isReady()
+    const wrapper = await mountView(SellerProductFormView, router, sellerProductFormStubs, '/seller/edit/5')
 
-    const wrapper = mount(SellerProductFormView, {
-      global: {
-        plugins: [router],
-        stubs: {
-          AppCard: { template: '<div><slot/></div>' },
-          BaseButton: { template: '<button type="submit"><slot/></button>' },
-          BaseInput: true,
-          ProductMainContainer: { template: '<div><slot/></div>' },
-          GalleryUploadCard: { template: '<div></div>' }
-        }
-      }
-    })
-
-    await flushPromises()
     expect(wrapper.text()).toContain('Edit product')
   })
 
@@ -207,23 +155,14 @@ describe('SellerProductFormView.vue', () => {
     const sellerStore = useSellerStore()
     sellerStore.account = { id: 1 } as unknown as Account
 
-    router.push('/seller/edit/5')
-    await router.isReady()
+    const wrapper = await mountView(SellerProductFormView, router, {
+      AppCard: { template: '<div><slot/></div>' },
+      BaseButton: true,
+      BaseInput: true,
+      ProductMainContainer: { template: '<div><slot/></div>' },
+      GalleryUploadCard: true
+    }, '/seller/edit/5')
 
-    const wrapper = mount(SellerProductFormView, {
-      global: {
-        plugins: [router],
-        stubs: {
-          AppCard: { template: '<div><slot/></div>' },
-          BaseButton: true,
-          BaseInput: true,
-          ProductMainContainer: { template: '<div><slot/></div>' },
-          GalleryUploadCard: true
-        }
-      }
-    })
-
-    await flushPromises()
     expect(wrapper.text()).toContain('Seller centerEdit productKeep your storefront information complete and accurate.Please sign in before opening the seller center.Basic informationDescriptionCategoriesSelect at least one category.No categories are available. Create one from the seller dashboard first.System requirementsBoth sections are optional. Empty sections are not sent.Minimum requirementsRecommended requirement')
   })
 })

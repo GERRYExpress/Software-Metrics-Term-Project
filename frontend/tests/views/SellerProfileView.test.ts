@@ -7,7 +7,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useUserActionStore } from '@/stores/userAction'
 import type { AxiosResponse } from 'axios'
 import type { Router } from 'vue-router'
-import { createViewTestRouter, resetViewTestState, viewStubs } from './viewTestUtils'
+import { createViewTestRouter, resetViewTestState, viewStubs, mountView } from './viewTestUtils'
 
 vi.mock('@/service/AccountService')
 vi.mock(import("vue-router"), async (importOriginal) => {
@@ -19,6 +19,12 @@ vi.mock(import("vue-router"), async (importOriginal) => {
 })
 describe('SellerProfileView.vue', () => {
   let router: Router
+
+  const sellerProfileStateStubs = {
+    ProductMainContainer: { template: '<div><slot/></div>' },
+    AppCard: true,
+    BaseButton: true
+  }
 
   beforeEach(() => {
     resetViewTestState()
@@ -46,17 +52,7 @@ describe('SellerProfileView.vue', () => {
       return sellerStore.account!
     })
 
-    router.push('/seller/profile')
-    await router.isReady()
-
-    const wrapper = mount(SellerProfileView, {
-      global: {
-        plugins: [router],
-        stubs: viewStubs
-      }
-    })
-
-    await flushPromises()
+    const wrapper = await mountView(SellerProfileView, router, viewStubs, '/seller/profile')
 
     expect(wrapper.text()).toContain('TestSeller')
     expect(wrapper.text()).toContain('15 January 2025')
@@ -70,21 +66,7 @@ describe('SellerProfileView.vue', () => {
     sellerStore.isLoading = true
     vi.spyOn(sellerStore, 'loadSeller').mockResolvedValueOnce(null as any)
 
-    router.push('/seller/profile')
-    await router.isReady()
-
-    const wrapper = mount(SellerProfileView, {
-      global: {
-        plugins: [router],
-        stubs: {
-          ProductMainContainer: { template: '<div><slot/></div>' },
-          AppCard: true,
-          BaseButton: true
-        }
-      }
-    })
-
-    await flushPromises()
+    const wrapper = await mountView(SellerProfileView, router, sellerProfileStateStubs, '/seller/profile')
     expect(wrapper.text()).toContain('Loading seller profile...')
   })
 
@@ -94,21 +76,7 @@ describe('SellerProfileView.vue', () => {
       response: { data: { error: 'Custom load error' } }
     })
 
-    router.push('/seller/profile')
-    await router.isReady()
-
-    const wrapper = mount(SellerProfileView, {
-      global: {
-        plugins: [router],
-        stubs: {
-          ProductMainContainer: { template: '<div><slot/></div>' },
-          AppCard: true,
-          BaseButton: true
-        }
-      }
-    })
-
-    await flushPromises()
+    const wrapper = await mountView(SellerProfileView, router, sellerProfileStateStubs, '/seller/profile')
     const alertBox = wrapper.find('[role="alert"]')
     expect(alertBox.exists()).toBe(true)
     expect(alertBox.text()).toBe('Custom load error')
@@ -118,21 +86,7 @@ describe('SellerProfileView.vue', () => {
     const sellerStore = useSellerStore()
     vi.spyOn(sellerStore, 'loadSeller').mockRejectedValueOnce(new Error('Standard error'))
 
-    router.push('/seller/profile')
-    await router.isReady()
-
-    const wrapper = mount(SellerProfileView, {
-      global: {
-        plugins: [router],
-        stubs: {
-          ProductMainContainer: { template: '<div><slot/></div>' },
-          AppCard: true,
-          BaseButton: true
-        }
-      }
-    })
-
-    await flushPromises()
+    const wrapper = await mountView(SellerProfileView, router, sellerProfileStateStubs, '/seller/profile')
     const alertBox = wrapper.find('[role="alert"]')
     expect(alertBox.text()).toBe('Standard error')
   })
@@ -149,17 +103,7 @@ describe('SellerProfileView.vue', () => {
     sellerStore.account = { id: 1, username: 'Seller' } as any
     vi.spyOn(sellerStore, 'loadSeller').mockResolvedValueOnce(sellerStore.account as any)
 
-    router.push('/seller/profile')
-    await router.isReady()
-
-    const wrapper = mount(SellerProfileView, {
-      global: {
-        plugins: [router],
-        stubs: viewStubs
-      }
-    })
-
-    await flushPromises()
+    const wrapper = await mountView(SellerProfileView, router, viewStubs, '/seller/profile')
 
     const logoutBtn = wrapper.findAll('button').find(b => b.text().includes('Logout'))
     await logoutBtn?.trigger('click')
@@ -177,17 +121,7 @@ describe('SellerProfileView.vue', () => {
     sellerStore.account = { id: 1, username: 'Seller', createdDate: new Date() } as any
     vi.spyOn(sellerStore, 'loadSeller').mockResolvedValueOnce(sellerStore.account as any)
 
-    router.push('/seller/profile')
-    await router.isReady()
-
-    const wrapper = mount(SellerProfileView, {
-      global: {
-        plugins: [router],
-        stubs: viewStubs
-      }
-    })
-
-    await flushPromises()
+    const wrapper = await mountView(SellerProfileView, router, viewStubs, '/seller/profile')
 
     const deleteBtn = wrapper.findAll('button').find(b => b.text().includes('Delete my account'))
     await deleteBtn?.trigger('click')
@@ -208,17 +142,7 @@ describe('SellerProfileView.vue', () => {
     vi.spyOn(sellerStore, 'loadSeller').mockResolvedValueOnce(sellerStore.account as any)
     vi.mocked(AccountService.deleteAccount).mockResolvedValueOnce({} as unknown as AxiosResponse<void>)
 
-    router.push('/seller/profile')
-    await router.isReady()
-
-    const wrapper = mount(SellerProfileView, {
-      global: {
-        plugins: [router],
-        stubs: viewStubs
-      }
-    })
-
-    await flushPromises()
+    const wrapper = await mountView(SellerProfileView, router, viewStubs, '/seller/profile')
 
     await wrapper.findAll('button').find(b => b.text().includes('Delete my account'))?.trigger('click')
     
@@ -240,17 +164,7 @@ describe('SellerProfileView.vue', () => {
       response: { data: { error: 'Delete failed' } }
     })
 
-    router.push('/seller/profile')
-    await router.isReady()
-
-    const wrapper = mount(SellerProfileView, {
-      global: {
-        plugins: [router],
-        stubs: viewStubs
-      }
-    })
-
-    await flushPromises()
+    const wrapper = await mountView(SellerProfileView, router, viewStubs, '/seller/profile')
 
     await wrapper.findAll('button').find(b => b.text().includes('Delete my account'))?.trigger('click')
     const confirmDeleteBtn = wrapper.findAll('button').find(b => b.text().includes('Yes, delete'))

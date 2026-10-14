@@ -2,6 +2,7 @@ package handler
 
 import (
 	"bytes"
+	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
@@ -11,7 +12,9 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"software-metrics-project/config"
+	"software-metrics-project/repository"
 	"software-metrics-project/repository/repotestutil"
+	"software-metrics-project/service"
 )
 
 // setupHandlerTest swaps in the mock DB and wires routes via wire.
@@ -117,4 +120,86 @@ func assertStatusAndMet(t *testing.T, mock sqlmock.Sqlmock, w *httptest.Response
 	t.Helper()
 	assert.Equal(t, want, w.Code)
 	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func serveCollection(t *testing.T, wire func(*gin.Engine), arrange func(sqlmock.Sqlmock), method, path, body string) (*httptest.ResponseRecorder, sqlmock.Sqlmock) {
+	t.Helper()
+	router, mock, cleanup := setupHandlerTest(t, wire)
+	t.Cleanup(cleanup)
+	if arrange != nil {
+		arrange(mock)
+	}
+	if body == "" {
+		return serve(router, method, path), mock
+	}
+	return serveJSON(router, method, path, body), mock
+}
+
+var cartRoutes = func(router *gin.Engine) {
+	repo := &repository.CartRepository{}
+	svc := &service.CartService{Repo: repo}
+	h := &CartHandler{Service: svc}
+	router.GET("/carts/:userID", h.GetCarts)
+	router.POST("/carts/:userID/:gameID", h.AddCart)
+	router.DELETE("/carts/:userID/:gameID", h.DeleteCart)
+}
+
+var wishlistRoutes = func(router *gin.Engine) {
+	repo := &repository.WishlistRepository{}
+	svc := &service.WishlistService{Repo: repo}
+	h := &WishlistHandler{Service: svc}
+	router.GET("/wishlists/:userID", h.GetWishlists)
+	router.POST("/wishlists/:userID/:gameID", h.AddWishlist)
+	router.DELETE("/wishlists/:userID/:gameID", h.DeleteWishlist)
+}
+
+func TestUserCollectionHandler(t *testing.T) {
+	cases := []struct {
+		table   string
+		dateCol string
+		base    string
+		wire    func(*gin.Engine)
+	}{
+		{table: "carts", dateCol: "cart_date", base: "/carts", wire: cartRoutes},
+		{table: "wishlists", dateCol: "wishlist_date", base: "/wishlists", wire: wishlistRoutes},
+	}
+	for _, tc := range cases {
+		t.Run(tc.table, func(t *testing.T) {
+			t.Run("Get success 200", func(t *testing.T) {
+				w, _ := serveCollection(t, tc.wire, func(mock sqlmock.Sqlmock) {
+					expectCollectionListQuery(mock, tc.table, 1, newCollectionHandlerRow(tc.dateCol, 1, 101))
+				}, http.MethodGet, tc.base+"/1", "")
+				assert.Equal(t, http.StatusOK, w.Code)
+			})
+			t.Run("Get bad-userID 400", func(t *testing.T) {
+				w, _ := serveCollection(t, tc.wire, nil, http.MethodGet, tc.base+"/invalid", "")
+				assert.Equal(t, http.StatusBadRequest, w.Code)
+				assert.Contains(t, w.Body.String(), "invalid syntax")
+			})
+			t.Run("Add success 200", func(t *testing.T) {
+				w, _ := serveCollection(t, tc.wire, func(mock sqlmock.Sqlmock) {
+					expectCollectionInsert(mock, tc.table, 1, 42)
+					expectCollectionGetQuery(mock, tc.table, 42, 1, newCollectionHandlerRow(tc.dateCol, 1, 42))
+				}, http.MethodPost, tc.base+"/1/42", "")
+				assert.Equal(t, http.StatusOK, w.Code)
+			})
+			t.Run("Add bad-gameID 400", func(t *testing.T) {
+				w, _ := serveCollection(t, tc.wire, nil, http.MethodPost, tc.base+"/1/abc", "")
+				assert.Equal(t, http.StatusBadRequest, w.Code)
+				assert.Contains(t, w.Body.String(), "invalid syntax")
+			})
+			t.Run("Delete success 200", func(t *testing.T) {
+				w, _ := serveCollection(t, tc.wire, func(mock sqlmock.Sqlmock) {
+					expectCollectionGetQuery(mock, tc.table, 42, 1, newCollectionHandlerRow(tc.dateCol, 1, 42))
+					expectCollectionDelete(mock, tc.table, 42, 1)
+				}, http.MethodDelete, tc.base+"/1/42", "")
+				assert.Equal(t, http.StatusOK, w.Code)
+			})
+			t.Run("Delete bad-userID 400", func(t *testing.T) {
+				w, _ := serveCollection(t, tc.wire, nil, http.MethodDelete, tc.base+"/xyz/42", "")
+				assert.Equal(t, http.StatusBadRequest, w.Code)
+				assert.Contains(t, w.Body.String(), "invalid syntax")
+			})
+		})
+	}
 }

@@ -2,8 +2,8 @@ import { mount, flushPromises } from '@vue/test-utils'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import CartView from '@/views/CartView.vue'
 import CartService from '@/service/CartService'
-import { createPinia, setActivePinia } from 'pinia'
-import { createRouter, createWebHistory } from 'vue-router'
+import type { Router } from 'vue-router'
+import { createViewTestRouter, resetViewTestState, mountView } from './viewTestUtils'
 import type { AxiosResponse } from 'axios'
 import type { Cart } from '@/types'
 import { useAuthStore } from '@/stores/auth'
@@ -19,20 +19,26 @@ vi.mock(import("vue-router"), async (importOriginal) => {
 })
 
 describe('CartView.vue', () => {
-  let router: ReturnType<typeof createRouter>
+  let router: Router
 
-  beforeEach(async () => {
-    setActivePinia(createPinia())
-    vi.clearAllMocks()
+  const cartDeleteStubs = {
+    ProductMainContainer: { template: '<div><slot/></div>' },
+    ProductListCard: {
+      template: '<button @click="$emit(\'delete-item\', 1, 101)">Delete</button>'
+    },
+    PriceSummaryCard: true,
+    PaymentModal: true,
+    PaymentSuccessModal: true
+  }
 
-    router = createRouter({
-      history: createWebHistory(),
-      routes: [
-        { path: '/', name: 'landing-page-view', component: { template: '<div>Landing</div>' } },
-        { path: '/cart', name: 'cart-view', component: CartView },
-        { path: '/search', name: 'search-result-view', component: { template: '<div>Search</div>' } }
-      ]
-    })
+  beforeEach(() => {
+    resetViewTestState()
+
+    router = createViewTestRouter([
+      { path: '/', name: 'landing-page-view', component: { template: '<div>Landing</div>' } },
+      { path: '/cart', name: 'cart-view', component: CartView },
+      { path: '/search', name: 'search-result-view', component: { template: '<div>Search</div>' } }
+    ])
   })
 
   it('renders empty cart message when no cart items exist', async () => {
@@ -43,22 +49,12 @@ describe('CartView.vue', () => {
       data: []
     } as unknown as AxiosResponse<Cart[]>)
 
-    router.push('/cart')
-    await router.isReady()
-
-    const wrapper = mount(CartView, {
-      global: {
-        plugins: [router],
-        stubs: {
-          ProductMainContainer: { template: '<div><slot/></div>' },
-          PriceSummaryCard: { template: '<div data-testid="price-summary"></div>' },
-          PaymentModal: true,
-          PaymentSuccessModal: true
-        }
-      }
-    })
-
-    await flushPromises()
+    const wrapper = await mountView(CartView, router, {
+      ProductMainContainer: { template: '<div><slot/></div>' },
+      PriceSummaryCard: { template: '<div data-testid="price-summary"></div>' },
+      PaymentModal: true,
+      PaymentSuccessModal: true
+    }, '/cart')
 
     expect(wrapper.text()).toContain('Your cart is currently empty')
     expect(wrapper.findComponent({ name: 'RouterLink' }).exists()).toBe(true)
@@ -85,31 +81,21 @@ describe('CartView.vue', () => {
       data: mockCarts
     } as unknown as AxiosResponse<Cart[]>)
 
-    router.push('/cart')
-    await router.isReady()
-
-    const wrapper = mount(CartView, {
-      global: {
-        plugins: [router],
-        stubs: {
-          ProductMainContainer: { template: '<div><slot/></div>' },
-          ProductListCard: { template: '<div class="product-list-card"></div>' },
-          PriceSummaryCard: { 
-            template: '<button @click="$emit(\'checkout\')">Checkout</button>' 
-          },
-          PaymentModal: { 
-            template: '<div v-if="show" id="payment-modal"><button @click="$emit(\'proceed\')">Proceed</button></div>',
-            props: ['show']
-          },
-          PaymentSuccessModal: { 
-            template: '<div v-if="show" id="success-modal"><button @click="$emit(\'done\')">Done</button></div>',
-            props: ['show']
-          }
-        }
+    const wrapper = await mountView(CartView, router, {
+      ProductMainContainer: { template: '<div><slot/></div>' },
+      ProductListCard: { template: '<div class="product-list-card"></div>' },
+      PriceSummaryCard: { 
+        template: '<button @click="$emit(\'checkout\')">Checkout</button>' 
+      },
+      PaymentModal: { 
+        template: '<div v-if="show" id="payment-modal"><button @click="$emit(\'proceed\')">Proceed</button></div>',
+        props: ['show']
+      },
+      PaymentSuccessModal: { 
+        template: '<div v-if="show" id="success-modal"><button @click="$emit(\'done\')">Done</button></div>',
+        props: ['show']
       }
-    })
-
-    await flushPromises()
+    }, '/cart')
 
     expect(wrapper.findAll('.product-list-card')).toHaveLength(2)
 
@@ -146,25 +132,7 @@ describe('CartView.vue', () => {
     vi.mocked(CartService.deleteCart).mockResolvedValueOnce({} as unknown as AxiosResponse<void>)
     const notifySpy = vi.spyOn(userActionStore, 'notify')
 
-    router.push('/cart')
-    await router.isReady()
-
-    const wrapper = mount(CartView, {
-      global: {
-        plugins: [router],
-        stubs: {
-          ProductMainContainer: { template: '<div><slot/></div>' },
-          ProductListCard: { 
-            template: '<button @click="$emit(\'delete-item\', 1, 101)">Delete</button>' 
-          },
-          PriceSummaryCard: true,
-          PaymentModal: true,
-          PaymentSuccessModal: true
-        }
-      }
-    })
-
-    await flushPromises()
+    const wrapper = await mountView(CartView, router, cartDeleteStubs, '/cart')
 
     await wrapper.find('.product-list-card button, button').trigger('click')
     await flushPromises()
@@ -192,25 +160,8 @@ describe('CartView.vue', () => {
     // First call for loading fails
     vi.mocked(CartService.getCarts).mockRejectedValueOnce(new Error('Load error'))
 
-    router.push('/cart')
-    await router.isReady()
+    const wrapper = await mountView(CartView, router, cartDeleteStubs, '/cart')
 
-    const wrapper = mount(CartView, {
-      global: {
-        plugins: [router],
-        stubs: {
-          ProductMainContainer: { template: '<div><slot/></div>' },
-          ProductListCard: { 
-            template: '<button @click="$emit(\'delete-item\', 1, 101)">Delete</button>' 
-          },
-          PriceSummaryCard: true,
-          PaymentModal: true,
-          PaymentSuccessModal: true
-        }
-      }
-    })
-
-    await flushPromises()
     expect(consoleLogSpy).toHaveBeenCalled()
 
     // Test deletion error catch block by re-mounting with success load, then failing delete
@@ -222,15 +173,7 @@ describe('CartView.vue', () => {
     const wrapper2 = mount(CartView, {
       global: {
         plugins: [router],
-        stubs: {
-          ProductMainContainer: { template: '<div><slot/></div>' },
-          ProductListCard: { 
-            template: '<button @click="$emit(\'delete-item\', 1, 101)">Delete</button>' 
-          },
-          PriceSummaryCard: true,
-          PaymentModal: true,
-          PaymentSuccessModal: true
-        }
+        stubs: cartDeleteStubs
       }
     })
 
@@ -248,20 +191,12 @@ describe('CartView.vue', () => {
     const authStore = useAuthStore()
     authStore.account = null as any
 
-    router.push('/cart')
-    await router.isReady()
-
-    mount(CartView, {
-      global: {
-        plugins: [router],
-        stubs: {
-          ProductMainContainer: { template: '<div><slot/></div>' },
-          PriceSummaryCard: true,
-          PaymentModal: true,
-          PaymentSuccessModal: true
-        }
-      }
-    })
+    await mountView(CartView, router, {
+      ProductMainContainer: { template: '<div><slot/></div>' },
+      PriceSummaryCard: true,
+      PaymentModal: true,
+      PaymentSuccessModal: true
+    }, '/cart')
 
     await flushPromises()
     expect(CartService.getCarts).not.toHaveBeenCalled()
