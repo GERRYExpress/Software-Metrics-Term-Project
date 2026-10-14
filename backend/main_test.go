@@ -14,164 +14,104 @@ func newTestRouter() *gin.Engine {
 	return gin.New()
 }
 
-func TestCreateAccountEndpoint(t *testing.T) {
-	router := newTestRouter()
-	group := router.Group("/accounts")
-
-	CreateAccountEndpoint(group)
-
-	tests := []struct {
-		name   string
-		method string
-		path   string
-	}{
-		{"get accounts", http.MethodGet, "/accounts"},
-		{"create account", http.MethodPost, "/accounts"},
-		{"delete account", http.MethodDelete, "/accounts/1"},
-		{"login", http.MethodPost, "/accounts/login"},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			w := httptest.NewRecorder()
-			req := httptest.NewRequest(tt.method, tt.path, nil)
-
-			router.ServeHTTP(w, req)
-
-			// A registered route must not return 404.
-			// It may return 400/500 because no request body/database mock exists.
-			assert.NotEqual(t, http.StatusNotFound, w.Code)
-		})
-	}
+type endpointRouteCase struct {
+	name   string
+	method string
+	path   string
 }
 
-func TestCreateGameEndpoint(t *testing.T) {
-	router := newTestRouter()
-	group := router.Group("/games")
-
-	CreateGameEndpoint(group)
-
-	tests := []struct {
-		name   string
-		method string
-		path   string
-	}{
-		{"get games", http.MethodGet, "/games"},
-		{"create game", http.MethodPost, "/games"},
-		{"update game", http.MethodPut, "/games/1"},
-		{"delete game", http.MethodDelete, "/games/1"},
-		{"get game", http.MethodGet, "/games/1"},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			w := httptest.NewRecorder()
-			req := httptest.NewRequest(tt.method, tt.path, nil)
-
-			router.ServeHTTP(w, req)
-
-			assert.NotEqual(t, http.StatusNotFound, w.Code)
-		})
-	}
+type endpointCase struct {
+	name   string
+	group  string
+	setup  func(r *gin.RouterGroup)
+	routes []endpointRouteCase
 }
 
-func TestCreateCategoryEndpoint(t *testing.T) {
-	router := newTestRouter()
-	group := router.Group("/categories")
-
-	CreateCategoryEndpoint(group)
-
-	tests := []struct {
-		name   string
-		method string
-		path   string
-	}{
-		{"get categories", http.MethodGet, "/categories"},
-		{"create category", http.MethodPost, "/categories"},
-		{"update category", http.MethodPut, "/categories/1"},
-		{"delete category", http.MethodDelete, "/categories/1"},
+func TestCreateEndpoints(t *testing.T) {
+	endpoints := []endpointCase{
+		{
+			name:  "accounts",
+			group: "/accounts",
+			setup: CreateAccountEndpoint,
+			routes: []endpointRouteCase{
+				{"get accounts", http.MethodGet, "/accounts"},
+				{"create account", http.MethodPost, "/accounts"},
+				{"delete account", http.MethodDelete, "/accounts/1"},
+				{"login", http.MethodPost, "/accounts/login"},
+			},
+		},
+		{
+			name:  "games",
+			group: "/games",
+			setup: CreateGameEndpoint,
+			routes: []endpointRouteCase{
+				{"get games", http.MethodGet, "/games"},
+				{"create game", http.MethodPost, "/games"},
+				{"update game", http.MethodPut, "/games/1"},
+				{"delete game", http.MethodDelete, "/games/1"},
+				{"get game", http.MethodGet, "/games/1"},
+			},
+		},
+		{
+			name:  "categories",
+			group: "/categories",
+			setup: CreateCategoryEndpoint,
+			routes: []endpointRouteCase{
+				{"get categories", http.MethodGet, "/categories"},
+				{"create category", http.MethodPost, "/categories"},
+				{"update category", http.MethodPut, "/categories/1"},
+				{"delete category", http.MethodDelete, "/categories/1"},
+			},
+		},
+		{
+			name:  "wishlists",
+			group: "/wishlists",
+			setup: CreateWishlistEndpoint,
+			routes: []endpointRouteCase{
+				{"get wishlists", http.MethodGet, "/wishlists/1"},
+				{"add wishlist", http.MethodPost, "/wishlists/1/10"},
+				{"delete wishlist", http.MethodDelete, "/wishlists/1/10"},
+			},
+		},
+		{
+			name:  "carts",
+			group: "/carts",
+			setup: CreateCartEndpoint,
+			routes: []endpointRouteCase{
+				{"get carts", http.MethodGet, "/carts/1"},
+				{"add cart", http.MethodPost, "/carts/1/10"},
+				{"delete cart", http.MethodDelete, "/carts/1/10"},
+			},
+		},
+		{
+			name:  "orders",
+			group: "/orders",
+			setup: CreateOrderEndpoint,
+			routes: []endpointRouteCase{
+				{"create order", http.MethodPost, "/orders"},
+			},
+		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			w := httptest.NewRecorder()
-			req := httptest.NewRequest(tt.method, tt.path, nil)
+	for _, ep := range endpoints {
+		t.Run(ep.name, func(t *testing.T) {
+			router := newTestRouter()
+			ep.setup(router.Group(ep.group))
 
-			router.ServeHTTP(w, req)
+			for _, tt := range ep.routes {
+				t.Run(tt.name, func(t *testing.T) {
+					w := httptest.NewRecorder()
+					req := httptest.NewRequest(tt.method, tt.path, nil)
 
-			assert.NotEqual(t, http.StatusNotFound, w.Code)
+					router.ServeHTTP(w, req)
+
+					// A registered route must not return 404.
+					// It may return 400/500 because no request body/database mock exists.
+					assert.NotEqual(t, http.StatusNotFound, w.Code)
+				})
+			}
 		})
 	}
-}
-
-func TestCreateWishlistEndpoint(t *testing.T) {
-	router := newTestRouter()
-	group := router.Group("/wishlists")
-
-	CreateWishlistEndpoint(group)
-
-	tests := []struct {
-		name   string
-		method string
-		path   string
-	}{
-		{"get wishlists", http.MethodGet, "/wishlists/1"},
-		{"add wishlist", http.MethodPost, "/wishlists/1/10"},
-		{"delete wishlist", http.MethodDelete, "/wishlists/1/10"},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			w := httptest.NewRecorder()
-			req := httptest.NewRequest(tt.method, tt.path, nil)
-
-			router.ServeHTTP(w, req)
-
-			assert.NotEqual(t, http.StatusNotFound, w.Code)
-		})
-	}
-}
-
-func TestCreateCartEndpoint(t *testing.T) {
-	router := newTestRouter()
-	group := router.Group("/carts")
-
-	CreateCartEndpoint(group)
-
-	tests := []struct {
-		name   string
-		method string
-		path   string
-	}{
-		{"get carts", http.MethodGet, "/carts/1"},
-		{"add cart", http.MethodPost, "/carts/1/10"},
-		{"delete cart", http.MethodDelete, "/carts/1/10"},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			w := httptest.NewRecorder()
-			req := httptest.NewRequest(tt.method, tt.path, nil)
-
-			router.ServeHTTP(w, req)
-
-			assert.NotEqual(t, http.StatusNotFound, w.Code)
-		})
-	}
-}
-
-func TestCreateOrderEndpoint(t *testing.T) {
-	router := newTestRouter()
-	group := router.Group("/orders")
-
-	CreateOrderEndpoint(group)
-
-	w := httptest.NewRecorder()
-	req := httptest.NewRequest(http.MethodPost, "/orders", nil)
-
-	router.ServeHTTP(w, req)
-
-	assert.NotEqual(t, http.StatusNotFound, w.Code)
 }
 
 func TestAllEndpointsCanBeRegisteredTogether(t *testing.T) {
