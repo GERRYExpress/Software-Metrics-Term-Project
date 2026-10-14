@@ -5,38 +5,17 @@ import (
 	"testing"
 	"time"
 
-	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/stretchr/testify/assert"
-
-	"software-metrics-project/config"
-	"software-metrics-project/repository/repotestutil"
 )
 
-func setupCartRepoTest(t *testing.T) (*CartRepository, sqlmock.Sqlmock, func()) {
-	db, mock, cleanup := repotestutil.NewMockDB(t)
-	originalDB := config.DB
-	config.DB = db
-
-	repo := &CartRepository{}
-	return repo, mock, func() {
-		config.DB = originalDB
-		cleanup()
-	}
-}
-
 func TestCartRepository_GetCarts(t *testing.T) {
-	repo, mock, cleanup := setupCartRepoTest(t)
+	mock, cleanup := setupCollectionTest(t)
 	defer cleanup()
 
-	t.Run("success", func(t *testing.T) {
-		now := time.Now()
-		rows := sqlmock.NewRows([]string{
-			"user_id", "product_id", "cart_date", "name", "price", "poster_url", "category_id", "category_name",
-		}).
-			AddRow(1, 101, now, "Game 1", 29.99, "url1", 1, "Action").
-			AddRow(1, 101, now, "Game 1", 29.99, "url1", 2, "RPG") // Same game, second category
+	repo := &CartRepository{}
 
-		mock.ExpectQuery("^SELECT(.*)FROM carts").WithArgs(1).WillReturnRows(rows)
+	t.Run("success", func(t *testing.T) {
+		expectCollectionList(mock, "carts", 1, newCollectionListRows(time.Now(), "cart_date"))
 
 		carts, err := repo.GetCarts(1)
 
@@ -48,16 +27,13 @@ func TestCartRepository_GetCarts(t *testing.T) {
 }
 
 func TestCartRepository_getCart(t *testing.T) {
-	repo, mock, cleanup := setupCartRepoTest(t)
+	mock, cleanup := setupCollectionTest(t)
 	defer cleanup()
 
-	t.Run("success", func(t *testing.T) {
-		now := time.Now()
-		rows := sqlmock.NewRows([]string{
-			"user_id", "product_id", "cart_date", "name", "price", "poster_url", "category_id", "category_name",
-		}).AddRow(1, 101, now, "Game 1", 29.99, "url1", 1, "Action")
+	repo := &CartRepository{}
 
-		mock.ExpectQuery("^SELECT(.*)FROM carts").WithArgs(101, 1).WillReturnRows(rows)
+	t.Run("success", func(t *testing.T) {
+		expectCollectionGet(mock, "carts", 1, 101, newCollectionSingleRow(time.Now(), "cart_date"))
 
 		cart, err := repo.getCart(1, 101)
 
@@ -68,7 +44,7 @@ func TestCartRepository_getCart(t *testing.T) {
 	})
 
 	t.Run("not found", func(t *testing.T) {
-		mock.ExpectQuery("^SELECT(.*)FROM carts").WithArgs(999, 1).WillReturnRows(sqlmock.NewRows([]string{}))
+		expectCollectionGet(mock, "carts", 1, 999, emptyCollectionRows())
 
 		_, err := repo.getCart(1, 999)
 		assert.ErrorIs(t, err, sql.ErrNoRows)
@@ -76,22 +52,17 @@ func TestCartRepository_getCart(t *testing.T) {
 }
 
 func TestCartRepository_AddCart(t *testing.T) {
-	repo, mock, cleanup := setupCartRepoTest(t)
+	mock, cleanup := setupCollectionTest(t)
 	defer cleanup()
+
+	repo := &CartRepository{}
 
 	t.Run("success", func(t *testing.T) {
 		// 1. Expect the Insert
-		mock.ExpectExec("^INSERT INTO carts").
-			WithArgs(1, 101, sqlmock.AnyArg()).
-			WillReturnResult(sqlmock.NewResult(1, 1))
+		expectCollectionInsert(mock, "carts", 1, 101)
 
 		// 2. Expect the getCart Select that immediately follows
-		now := time.Now()
-		rows := sqlmock.NewRows([]string{
-			"user_id", "product_id", "cart_date", "name", "price", "poster_url", "category_id", "category_name",
-		}).AddRow(1, 101, now, "Game 1", 29.99, "url1", nil, nil)
-
-		mock.ExpectQuery("^SELECT(.*)FROM carts").WithArgs(101, 1).WillReturnRows(rows)
+		expectCollectionGet(mock, "carts", 1, 101, newCollectionBareRow(time.Now(), "cart_date"))
 
 		cart, err := repo.AddCart(1, 101)
 		assert.NoError(t, err)
@@ -101,20 +72,17 @@ func TestCartRepository_AddCart(t *testing.T) {
 }
 
 func TestCartRepository_DeleteCart(t *testing.T) {
-	repo, mock, cleanup := setupCartRepoTest(t)
+	mock, cleanup := setupCollectionTest(t)
 	defer cleanup()
+
+	repo := &CartRepository{}
 
 	t.Run("success", func(t *testing.T) {
 		// 1. Expect getCart to verify it exists and return the deleted object
-		now := time.Now()
-		rows := sqlmock.NewRows([]string{
-			"user_id", "product_id", "cart_date", "name", "price", "poster_url", "category_id", "category_name",
-		}).AddRow(1, 101, now, "Game 1", 29.99, "url1", nil, nil)
+		expectCollectionGet(mock, "carts", 1, 101, newCollectionBareRow(time.Now(), "cart_date"))
 
-		mock.ExpectQuery("^SELECT(.*)FROM carts").WithArgs(101, 1).WillReturnRows(rows)
-
-		// 2. Expect the actual Delete execution (squirrel.Eq sorts keys: product_id, then user_id)
-		mock.ExpectExec("^DELETE FROM carts").WithArgs(101, 1).WillReturnResult(sqlmock.NewResult(0, 1))
+		// 2. Expect the actual Delete execution
+		expectCollectionDelete(mock, "carts", 1, 101)
 
 		cart, err := repo.DeleteCart(1, 101)
 
@@ -125,7 +93,7 @@ func TestCartRepository_DeleteCart(t *testing.T) {
 
 	t.Run("fails if cart does not exist", func(t *testing.T) {
 		// getCart returns nothing
-		mock.ExpectQuery("^SELECT(.*)FROM carts").WithArgs(999, 1).WillReturnRows(sqlmock.NewRows([]string{}))
+		expectCollectionGet(mock, "carts", 1, 999, emptyCollectionRows())
 
 		_, err := repo.DeleteCart(1, 999)
 

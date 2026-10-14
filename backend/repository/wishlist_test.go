@@ -5,38 +5,17 @@ import (
 	"testing"
 	"time"
 
-	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/stretchr/testify/assert"
-
-	"software-metrics-project/config"
-	"software-metrics-project/repository/repotestutil"
 )
 
-func setupWishlistRepoTest(t *testing.T) (*WishlistRepository, sqlmock.Sqlmock, func()) {
-	db, mock, cleanup := repotestutil.NewMockDB(t)
-	originalDB := config.DB
-	config.DB = db
-
-	repo := &WishlistRepository{}
-	return repo, mock, func() {
-		config.DB = originalDB
-		cleanup()
-	}
-}
-
 func TestWishlistRepository_GetWishlists(t *testing.T) {
-	repo, mock, cleanup := setupWishlistRepoTest(t)
+	mock, cleanup := setupCollectionTest(t)
 	defer cleanup()
 
-	t.Run("success", func(t *testing.T) {
-		now := time.Now()
-		rows := sqlmock.NewRows([]string{
-			"user_id", "product_id", "wishlist_date", "name", "price", "poster_url", "category_id", "category_name",
-		}).
-			AddRow(1, 101, now, "Game 1", 29.99, "url1", 1, "Action").
-			AddRow(1, 101, now, "Game 1", 29.99, "url1", 2, "RPG") // Same game, second category
+	repo := &WishlistRepository{}
 
-		mock.ExpectQuery("^SELECT(.*)FROM wishlists").WithArgs(1).WillReturnRows(rows)
+	t.Run("success", func(t *testing.T) {
+		expectCollectionList(mock, "wishlists", 1, newCollectionListRows(time.Now(), "wishlist_date"))
 
 		wishlists, err := repo.GetWishlists(1)
 
@@ -48,16 +27,13 @@ func TestWishlistRepository_GetWishlists(t *testing.T) {
 }
 
 func TestWishlistRepository_getWishlist(t *testing.T) {
-	repo, mock, cleanup := setupWishlistRepoTest(t)
+	mock, cleanup := setupCollectionTest(t)
 	defer cleanup()
 
-	t.Run("success", func(t *testing.T) {
-		now := time.Now()
-		rows := sqlmock.NewRows([]string{
-			"user_id", "product_id", "wishlist_date", "name", "price", "poster_url", "category_id", "category_name",
-		}).AddRow(1, 101, now, "Game 1", 29.99, "url1", 1, "Action")
+	repo := &WishlistRepository{}
 
-		mock.ExpectQuery("^SELECT(.*)FROM wishlists").WithArgs(101, 1).WillReturnRows(rows)
+	t.Run("success", func(t *testing.T) {
+		expectCollectionGet(mock, "wishlists", 1, 101, newCollectionSingleRow(time.Now(), "wishlist_date"))
 
 		wishlist, err := repo.getWishlist(1, 101)
 
@@ -68,7 +44,7 @@ func TestWishlistRepository_getWishlist(t *testing.T) {
 	})
 
 	t.Run("not found", func(t *testing.T) {
-		mock.ExpectQuery("^SELECT(.*)FROM wishlists").WithArgs(999, 1).WillReturnRows(sqlmock.NewRows([]string{}))
+		expectCollectionGet(mock, "wishlists", 1, 999, emptyCollectionRows())
 
 		_, err := repo.getWishlist(1, 999)
 		assert.ErrorIs(t, err, sql.ErrNoRows)
@@ -76,22 +52,17 @@ func TestWishlistRepository_getWishlist(t *testing.T) {
 }
 
 func TestWishlistRepository_AddWishlist(t *testing.T) {
-	repo, mock, cleanup := setupWishlistRepoTest(t)
+	mock, cleanup := setupCollectionTest(t)
 	defer cleanup()
+
+	repo := &WishlistRepository{}
 
 	t.Run("success", func(t *testing.T) {
 		// 1. Expect the Insert
-		mock.ExpectExec("^INSERT INTO wishlists").
-			WithArgs(1, 101, sqlmock.AnyArg()).
-			WillReturnResult(sqlmock.NewResult(1, 1))
+		expectCollectionInsert(mock, "wishlists", 1, 101)
 
 		// 2. Expect the getWishlist Select that immediately follows
-		now := time.Now()
-		rows := sqlmock.NewRows([]string{
-			"user_id", "product_id", "wishlist_date", "name", "price", "poster_url", "category_id", "category_name",
-		}).AddRow(1, 101, now, "Game 1", 29.99, "url1", nil, nil)
-
-		mock.ExpectQuery("^SELECT(.*)FROM wishlists").WithArgs(101, 1).WillReturnRows(rows)
+		expectCollectionGet(mock, "wishlists", 1, 101, newCollectionBareRow(time.Now(), "wishlist_date"))
 
 		wishlist, err := repo.AddWishlist(1, 101)
 		assert.NoError(t, err)
@@ -101,20 +72,17 @@ func TestWishlistRepository_AddWishlist(t *testing.T) {
 }
 
 func TestWishlistRepository_DeleteWishlist(t *testing.T) {
-	repo, mock, cleanup := setupWishlistRepoTest(t)
+	mock, cleanup := setupCollectionTest(t)
 	defer cleanup()
+
+	repo := &WishlistRepository{}
 
 	t.Run("success", func(t *testing.T) {
 		// 1. Expect getWishlist to verify it exists and return the deleted object
-		now := time.Now()
-		rows := sqlmock.NewRows([]string{
-			"user_id", "product_id", "wishlist_date", "name", "price", "poster_url", "category_id", "category_name",
-		}).AddRow(1, 101, now, "Game 1", 29.99, "url1", nil, nil)
-
-		mock.ExpectQuery("^SELECT(.*)FROM wishlists").WithArgs(101, 1).WillReturnRows(rows)
+		expectCollectionGet(mock, "wishlists", 1, 101, newCollectionBareRow(time.Now(), "wishlist_date"))
 
 		// 2. Expect the actual Delete execution
-		mock.ExpectExec("^DELETE FROM wishlists").WithArgs(101, 1).WillReturnResult(sqlmock.NewResult(0, 1))
+		expectCollectionDelete(mock, "wishlists", 1, 101)
 
 		wishlist, err := repo.DeleteWishlist(1, 101)
 
